@@ -131,6 +131,7 @@ export const quote = pgTable("quote", {
 }, (t) => ({
   byOrgProduct: index("quote_org_product_idx").on(t.orgId, t.productId),
   byVendor: index("quote_vendor_idx").on(t.vendorId),
+  byOrgCapturedAt: index("quote_org_captured_at_idx").on(t.orgId, t.capturedAt),
 }));
 
 export const rfq = pgTable("rfq", {
@@ -188,7 +189,9 @@ export const extractionJob = pgTable("extraction_job", {
   startedAt: timestamp("started_at"),
   completedAt: timestamp("completed_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
-});
+}, (t) => ({
+  byOrgStatusCreated: index("extraction_job_org_status_created_idx").on(t.orgId, t.status, t.createdAt),
+}));
 
 export const eventLog = pgTable("event_log", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -207,7 +210,9 @@ export const vendorScore = pgTable("vendor_score", {
   responseSpeedSeconds: integer("response_speed_seconds"),
   reliabilityProxy: integer("reliability_proxy"),
   lastComputedAt: timestamp("last_computed_at").notNull().defaultNow(),
-});
+}, (t) => ({
+  uniqVendor: uniqueIndex("vendor_score_vendor_uniq").on(t.vendorId),
+}));
 
 export const rfqTemplate = pgTable("rfq_template", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -254,7 +259,9 @@ export const buyOpportunity = pgTable("buy_opportunity", {
   expiresAt: timestamp("expires_at"),
   status: text("status").notNull().default("open"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
-});
+}, (t) => ({
+  byOrgStatusCreated: index("buy_opportunity_org_status_created_idx").on(t.orgId, t.status, t.createdAt),
+}));
 
 export const priceForecast = pgTable("price_forecast", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -359,4 +366,7 @@ export const notification = pgTable("notification", {
   payload: jsonb("payload"),
   readAt: timestamp("read_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
-});
+}, (t) => ({
+  byUserUnread: index("notification_user_unread_idx").on(t.userId, t.readAt),
+  byOrgCreated: index("notification_org_created_idx").on(t.orgId, t.createdAt),
+}));
