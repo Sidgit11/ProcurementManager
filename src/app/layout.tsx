@@ -12,11 +12,12 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <ClerkProvider>
-      <html lang="en" className={`${anek.variable} ${manrope.variable}`}>
-        <body>{children}</body>
-      </html>
-    </ClerkProvider>
+  const isDemo = process.env.DEMO_MODE === "1";
+  const html = (
+    <html lang="en" className={`${anek.variable} ${manrope.variable}`}>
+      <body>{children}</body>
+    </html>
   );
+  if (isDemo) return html;
+  return <ClerkProvider>{html}</ClerkProvider>;
 }

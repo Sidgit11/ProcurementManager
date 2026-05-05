@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/db/client";
+import { db, getDb } from "@/lib/db/client";
 import { buyOpportunity, purchaseOrder, quote } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  await getDb();
   const { id } = await params;
   const [opp] = await db.select().from(buyOpportunity).where(eq(buyOpportunity.id, id));
   if (!opp) return NextResponse.json({ error: "not found" }, { status: 404 });

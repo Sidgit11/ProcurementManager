@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { db } from "@/lib/db/client";
+import { db, getDb } from "@/lib/db/client";
 import { agentPolicy, org } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { runDailySummary } from "@/lib/agents/daily-summary";
@@ -7,6 +7,7 @@ import { runFollowUp } from "@/lib/agents/follow-up";
 import { runBuyNow } from "@/lib/agents/buy-now";
 
 export async function GET() {
+  await getDb();
   const orgs = await db.select().from(org);
   let dispatched = 0;
   for (const o of orgs) {
