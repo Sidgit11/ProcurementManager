@@ -5,6 +5,7 @@ import { buildVendors } from "./vendors";
 import { computeLandedCostUsdPerKgMicros } from "../normalization/landed-cost";
 import type { Incoterm } from "../normalization/incoterm";
 import { seedFxAndCorridors } from "./fx-and-corridors";
+import { seedExtras } from "./extras";
 
 export async function seedPolico() {
   // Create org + user
@@ -170,4 +171,20 @@ export async function seedPolico() {
   console.log(
     `Seeded Polico: ${products.length} products, ${vendors.length} vendors, ${insertedMessages.length} messages, ${finalQuotes.length} quotes.`
   );
+
+  // Seed extras for AI features
+  await seedExtras(o.id);
+
+  // Post-seed jobs: scoring + opportunity scan + forecasts
+  const { recomputeVendorScores } = await import("../scoring/job");
+  await recomputeVendorScores(o.id);
+  console.log("Recomputed vendor scores.");
+
+  const { scanForOpportunities } = await import("../opportunity/scan");
+  const oppResult = await scanForOpportunities(o.id);
+  console.log(`Buy-opportunity scan: ${oppResult.created} opportunities.`);
+
+  const { computeForecasts } = await import("../forecast/job");
+  await computeForecasts(o.id);
+  console.log("Computed forecasts.");
 }

@@ -1,36 +1,75 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Tradyon Procurement — Prototype
 
-## Getting Started
+End-to-end AI-first procurement OS. Same code that demos to design partners ships to production.
 
-First, run the development server:
+## Quick start
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
+# 1. Provision Postgres (Neon dev branch via Vercel Marketplace, or local Docker)
+docker run -d --name tp-pg -e POSTGRES_PASSWORD=dev -p 5432:5432 postgres:16
+# Set DATABASE_URL=postgres://postgres:dev@localhost:5432/postgres in .env.local
+
+# 2. Set ANTHROPIC_API_KEY (required for extraction + chat + agents) in .env.local
+# 3. Set Clerk keys (NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY, CLERK_SECRET_KEY) in .env.local
+# 4. Optionally set BLOB_READ_WRITE_TOKEN for file uploads (else falls back to local URLs)
+
+pnpm install
+pnpm db:migrate
+pnpm build:demo-zip
+pnpm seed
 pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Visit http://localhost:3000/sign-in and sign in with the Clerk dev user. You'll land on `/digest` with the full Polico seed (30 SKUs, 80 vendors, ~1200 quotes, agent policies, sample alerts, chat session).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Demo flow
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. `/onboarding` — drop the bundled `vendor-patel-chat-export.zip`. Watch the processing panel structure quotes in real time.
+2. `/digest` — see outliers + new quotes for the day.
+3. `/compare/BLACK-PEPPER-5MM` — comparison table across vendors with normalized landed cost.
+4. `/vendors/<id>` — auto-built vendor profile with score tier and recent quotes.
+5. `/opportunities` — high-conviction buy opportunities with reasoning + counterfactuals.
+6. `/insights/forecasts` — rolling-median forecasts per SKU.
+7. `/agents` — agent policies + recent runs.
+8. `/alerts` — create a price-below alert; ingest a fixture quote to trigger.
+9. **Cmd+K (or click the lime FAB)** — TradeGenie chat with tool-calling.
 
-## Learn More
+## CI smoke
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+# Terminal A
+pnpm dev
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+# Terminal B
+pnpm demo:smoke   # uploads the demo zip, polls until processing completes, asserts ✅
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Deploy to Vercel
 
-## Deploy on Vercel
+```bash
+vercel link
+# Provision Neon Postgres + Vercel Blob via Marketplace
+# Add Clerk integration (auto-provisions NEXT_PUBLIC_CLERK_* + CLERK_SECRET_KEY)
+vercel env pull
+pnpm db:migrate
+pnpm build:demo-zip
+pnpm seed
+vercel --prod
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Architecture summary
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Next.js 16 App Router, React 19, TypeScript, Tailwind v4
+- Postgres + Drizzle (30 tables), all multi-tenant from day one
+- Anthropic SDK for classification + extraction; Vercel AI SDK for streaming chat
+- Clerk auth with org-scoped RBAC
+- Real WhatsApp Chat Export parser (production-ready), real normalization engine, real LLM extraction pipeline
+- 5 opt-in agents (daily summary, follow-up, negotiation, buy-now, vendor discovery) with audit log
+- TradeGenie chat with 5 tools (search vendors, find outliers, compare quotes, price history, list RFQs)
+
+## What ships behind a v1.1 flag
+
+- Real Gmail OAuth ingestion (currently mock adapter)
+- Real WhatsApp Cloud API send (currently mock adapter)
+- Real Whisper voice transcription (currently stub)
+- Real shipment-data-driven vendor discovery (currently stub fixtures)
