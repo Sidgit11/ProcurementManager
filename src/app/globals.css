@@ -1,26 +1,33 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  --color-forest-50:  #EAF1ED;
+  --color-forest-100: #C5D6CB;
+  --color-forest-500: #2A5640;
+  --color-forest-700: #1A3326;
+  --color-lime-300:   #E2FA84;
+  --color-lime-400:   #D4F65E;
+  --color-lime-500:   #B7E03D;
+  --color-bg-start:   #F4F6F4;
+  --color-bg-end:     #EAE9E1;
+
+  --font-sans: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-anek-latin), ui-sans-serif, system-ui, sans-serif;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+html, body {
+  background: linear-gradient(180deg, var(--color-bg-start) 0%, var(--color-bg-end) 100%);
+  color: var(--color-forest-700);
+  font-family: var(--font-sans);
+  min-height: 100vh;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+h1, h2, h3, h4 { font-family: var(--font-display); letter-spacing: -0.01em; }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+.label-caps {
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-forest-500);
 }
