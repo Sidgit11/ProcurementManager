@@ -5,6 +5,7 @@ import { classify } from "./classifier";
 import { extractQuoteFromMessage } from "./extractor";
 import { computeLandedCostUsdPerKgMicros } from "../normalization/landed-cost";
 import type { Incoterm } from "../normalization/incoterm";
+import { evaluateOnQuote } from "../alerts/evaluate";
 
 export async function processMessage(messageId: string): Promise<{ created: boolean }> {
   const [m] = await db.select().from(message).where(eq(message.id, messageId));
@@ -58,7 +59,7 @@ export async function processMessage(messageId: string): Promise<{ created: bool
     }
   }
 
-  await db.insert(quote).values({
+  const [newQuote] = await db.insert(quote).values({
     orgId: m.orgId,
     vendorId,
     productId: null,
@@ -79,7 +80,9 @@ export async function processMessage(messageId: string): Promise<{ created: bool
     rawExtractedJson: ex,
     confidencePerField: ex.confidence ?? {},
     landedCostUsdPerKg: landedMicros,
-  });
+  }).returning();
+
+  await evaluateOnQuote(m.orgId, newQuote.id);
 
   return { created: true };
 }
