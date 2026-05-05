@@ -6,21 +6,58 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "vitest",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:push": "drizzle-kit push",
+    "seed": "tsx scripts/seed.ts",
+    "build:demo-zip": "tsx scripts/build-demo-zip.ts",
+    "demo:smoke": "tsx scripts/demo-smoke.ts"
   },
   "dependencies": {
-    "next": "16.2.4",
+    "@anthropic-ai/sdk": "latest",
+    "@phosphor-icons/react": "^2.1.10",
+    "@radix-ui/react-checkbox": "latest",
+    "@radix-ui/react-dialog": "latest",
+    "@radix-ui/react-dropdown-menu": "latest",
+    "@radix-ui/react-popover": "latest",
+    "@radix-ui/react-select": "latest",
+    "@radix-ui/react-separator": "latest",
+    "@radix-ui/react-tabs": "latest",
+    "@radix-ui/react-tooltip": "latest",
+    "@vercel/blob": "latest",
+    "clsx": "latest",
+    "cmdk": "latest",
+    "drizzle-orm": "latest",
+    "framer-motion": "latest",
+    "jszip": "latest",
+    "mime": "latest",
+    "next": "16.2.1",
+    "pg": "latest",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "recharts": "latest",
+    "sonner": "latest",
+    "tailwind-merge": "latest",
+    "zustand": "latest"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": ["esbuild"]
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
+    "@types/pg": "latest",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@vitest/ui": "latest",
+    "drizzle-kit": "latest",
     "eslint": "^9",
-    "eslint-config-next": "16.2.4",
+    "eslint-config-next": "16.2.1",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "tsx": "latest",
+    "typescript": "^5",
+    "vitest": "latest"
   }
 }
