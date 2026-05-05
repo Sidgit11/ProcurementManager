@@ -9,9 +9,14 @@ const ADAPTERS = [
 
 export default function Integrations() {
   return (
-    <div className="space-y-3">
-      <h1 className="font-display text-3xl">Integrations</h1>
-      <p className="text-sm text-forest-500">Adapter modes are controlled by environment variables. Mock mode returns realistic sample data; real mode requires the corresponding API credentials.</p>
+    <div className="space-y-4">
+      <div>
+        <h1 className="font-display text-3xl">Integrations</h1>
+        <p className="mt-1 text-sm text-forest-500">
+          Tradyon talks to Gmail, WhatsApp, and Whisper through swappable adapters. Mock mode uses sample data;
+          real mode requires API keys.
+        </p>
+      </div>
       <div className="grid gap-3 md:grid-cols-3">
         {ADAPTERS.map((a) => {
           const current = process.env[a.envKey] ?? a.defaultValue;

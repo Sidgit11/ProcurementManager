@@ -26,39 +26,59 @@ export default async function Opportunities() {
     .limit(20);
 
   return (
-    <div className="space-y-4">
-      <h1 className="font-display text-3xl">Buy opportunities</h1>
-      {rows.length === 0 && (
-        <p className="text-sm text-forest-500">
-          No high-conviction opportunities right now. Run the buy-opportunity scan to surface fresh candidates.
+    <div className="mx-auto max-w-4xl space-y-6">
+      {/* Page header */}
+      <div>
+        <div className="label-caps">BUY OPPORTUNITIES</div>
+        <h1 className="font-display text-3xl mt-1">Quotes worth acting on now</h1>
+        <p className="mt-2 text-sm text-forest-500 max-w-2xl">
+          When a vendor&apos;s quote drops below your trailing 30-day average — and that vendor has a reliability
+          tier you trust — it lands here with the math behind it. Each one expires when the vendor&apos;s
+          validity window closes.
         </p>
-      )}
-      <div className="grid gap-3 md:grid-cols-2">
-        {rows.map((r) => (
-          <Card key={r.id}>
-            <div className="flex items-start justify-between">
-              <div>
-                <div className="label-caps">Opportunity</div>
-                <div className="font-display text-lg">{r.productName ?? "Unknown product"}</div>
-                <div className="text-sm text-forest-500">{r.vendorName ?? "Unknown vendor"}</div>
-              </div>
-              <Pill label={`SCORE ${(r.score / 10_000).toFixed(0)}`} />
-            </div>
-            {r.reasoning && <p className="mt-3 text-sm">{r.reasoning}</p>}
-            <div className="mt-3 flex gap-2">
-              <form action={`/api/opportunities/${r.id}/buy`} method="post">
-                <Button variant="secondary" type="submit">Buy</Button>
-              </form>
-              <form action={`/api/opportunities/${r.id}/snooze`} method="post">
-                <Button variant="ghost" type="submit">Snooze</Button>
-              </form>
-              <form action={`/api/opportunities/${r.id}/dismiss`} method="post">
-                <Button variant="ghost" type="submit">Dismiss</Button>
-              </form>
-            </div>
-          </Card>
-        ))}
       </div>
+
+      {rows.length === 0 ? (
+        <p className="text-sm text-forest-500 italic">
+          No high-conviction opportunities today. The scanner runs automatically every 30 minutes — fresh quotes
+          are evaluated as they come in.
+        </p>
+      ) : (
+        <div className="grid gap-3 md:grid-cols-2">
+          {rows.map((r) => {
+            const strength = Math.min(100, Math.round((r.score ?? 0) / 10_000));
+            return (
+              <Card key={r.id}>
+                <div className="flex items-start justify-between">
+                  <div>
+                    <div className="label-caps">Buy opportunity</div>
+                    <div className="font-display text-lg">{r.productName ?? "Unknown product"}</div>
+                    <div className="text-sm text-forest-500">{r.vendorName ?? "Unknown vendor"}</div>
+                  </div>
+                  <Pill label={`STRENGTH ${strength}`} />
+                </div>
+                {r.reasoning && <p className="mt-3 text-sm">{r.reasoning}</p>}
+                {r.expires && (
+                  <p className="mt-2 text-xs text-forest-400">
+                    Expires {r.expires.toISOString().slice(0, 10)}
+                  </p>
+                )}
+                <div className="mt-3 flex gap-2">
+                  <form action={`/api/opportunities/${r.id}/buy`} method="post">
+                    <Button variant="secondary" type="submit">Buy</Button>
+                  </form>
+                  <form action={`/api/opportunities/${r.id}/snooze`} method="post">
+                    <Button variant="ghost" type="submit">Snooze</Button>
+                  </form>
+                  <form action={`/api/opportunities/${r.id}/dismiss`} method="post">
+                    <Button variant="ghost" type="submit">Dismiss</Button>
+                  </form>
+                </div>
+              </Card>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

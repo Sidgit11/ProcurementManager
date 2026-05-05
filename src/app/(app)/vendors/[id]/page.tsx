@@ -22,16 +22,22 @@ export default async function VendorDetail({ params }: { params: Promise<{ id: s
   const quotes = await db.select().from(quote).where(eq(quote.vendorId, id)).orderBy(desc(quote.capturedAt)).limit(20);
 
   return (
-    <div className="space-y-6">
+    <div className="mx-auto max-w-4xl space-y-6">
+      {/* Vendor header */}
       <div>
         <div className="flex items-center gap-3">
           <h1 className="font-display text-3xl">{v.name}</h1>
           {v.scoreTier && <Pill label={v.scoreTier} />}
         </div>
-        <div className="text-sm text-forest-500">
+        <div className="text-sm text-forest-500 mt-1">
           {v.country ?? "—"} · last activity {s.last_activity?.slice(0, 10) ?? "—"}
         </div>
+        <p className="mt-2 text-sm text-forest-400">
+          This profile updates automatically every time {v.name} replies. Edit notes manually below.
+        </p>
       </div>
+
+      {/* Stats */}
       <div className="grid grid-cols-3 gap-4">
         <Card>
           <div className="label-caps">Total quotes</div>
@@ -46,6 +52,8 @@ export default async function VendorDetail({ params }: { params: Promise<{ id: s
           <div className="text-2xl font-display">{s.last_activity?.slice(0, 10) ?? "—"}</div>
         </Card>
       </div>
+
+      {/* Recent quotes */}
       <Card>
         <div className="label-caps mb-2">Recent quotes</div>
         <table className="w-full text-sm">
@@ -72,6 +80,14 @@ export default async function VendorDetail({ params }: { params: Promise<{ id: s
             ))}
           </tbody>
         </table>
+      </Card>
+
+      {/* Notes */}
+      <Card>
+        <div className="label-caps mb-2">NOTES</div>
+        <p className="text-sm text-forest-400 italic">
+          Notes section coming soon. Until then, paste notes into your CRM and they&apos;ll be imported once we wire that up.
+        </p>
       </Card>
     </div>
   );

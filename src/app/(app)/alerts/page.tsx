@@ -11,6 +11,15 @@ interface Alert {
   enabled: boolean;
 }
 
+function formatAlertParams(params: Record<string, unknown>): string {
+  const sku = params.sku as string | undefined;
+  const threshold = params.thresholdLandedMicros as number | undefined;
+  if (sku && threshold != null) {
+    return `${sku} — notify below $${(threshold / 1_000_000).toFixed(2)}/kg`;
+  }
+  return JSON.stringify(params);
+}
+
 export default function Alerts() {
   const [sku, setSku] = useState("");
   const [threshold, setThreshold] = useState("3.50");
@@ -33,7 +42,7 @@ export default function Alerts() {
       }),
     });
     if (r.ok) {
-      toast.success("Alert created");
+      toast.success("Alert set");
       const created = (await r.json()) as Alert;
       setList((prev) => [created, ...prev]);
       setSku("");
@@ -43,32 +52,61 @@ export default function Alerts() {
   }
 
   return (
-    <div className="space-y-4">
-      <h1 className="font-display text-3xl">Alerts</h1>
+    <div className="mx-auto max-w-2xl space-y-6">
+      {/* Page header */}
+      <div>
+        <div className="label-caps">ALERTS</div>
+        <h1 className="font-display text-3xl mt-1">Get pinged when something matters</h1>
+        <p className="mt-2 text-sm text-forest-500">
+          Alerts watch every captured quote in real time. Set a threshold for any SKU — when a vendor crosses it,
+          you get a notification. Useful for SKUs where the market moves fast and you can&apos;t watch the inbox all day.
+        </p>
+      </div>
+
+      {/* New alert form */}
       <Card>
-        <div className="label-caps mb-2">New: notify when SKU drops below</div>
-        <div className="flex gap-2">
-          <input
-            className="rounded-lg border border-forest-100/60 px-3 py-2 text-sm"
-            placeholder="SKU (e.g. CUMIN-99PURE)"
-            value={sku}
-            onChange={(e) => setSku(e.target.value)}
-          />
-          <input
-            className="w-32 rounded-lg border border-forest-100/60 px-3 py-2 text-sm"
-            value={threshold}
-            onChange={(e) => setThreshold(e.target.value)}
-          />
-          <Button variant="secondary" onClick={add} disabled={!sku || !threshold}>Create</Button>
+        <div className="label-caps mb-3">SET A NEW ALERT</div>
+        <div className="space-y-3">
+          <div>
+            <label className="text-sm font-medium block mb-1">SKU</label>
+            <input
+              className="w-full rounded-lg border border-forest-100/60 px-3 py-2 text-sm"
+              placeholder="e.g. CUMIN-99PURE"
+              value={sku}
+              onChange={(e) => setSku(e.target.value)}
+            />
+            <p className="mt-1 text-xs text-forest-400">Use the same SKU code you see on the Compare page.</p>
+          </div>
+          <div>
+            <label className="text-sm font-medium block mb-1">Notify when landed cost drops below (USD/kg)</label>
+            <input
+              className="w-32 rounded-lg border border-forest-100/60 px-3 py-2 text-sm"
+              value={threshold}
+              onChange={(e) => setThreshold(e.target.value)}
+            />
+          </div>
+          <Button variant="secondary" onClick={add} disabled={!sku || !threshold}>
+            Set alert
+          </Button>
         </div>
       </Card>
-      <div className="grid gap-2">
-        {list.length === 0 && <p className="text-sm text-forest-500">No alerts yet. Create your first one.</p>}
-        {list.map((a) => (
-          <Card key={a.id}>
-            <div className="text-sm">{a.kind} · {JSON.stringify(a.params)}</div>
-          </Card>
-        ))}
+
+      {/* Existing alerts */}
+      <div>
+        <div className="label-caps mb-2">ACTIVE ALERTS</div>
+        {list.length === 0 ? (
+          <p className="text-sm text-forest-500 italic">
+            No alerts yet. Setting one is fast — pick a SKU and a price threshold above.
+          </p>
+        ) : (
+          <div className="grid gap-2">
+            {list.map((a) => (
+              <Card key={a.id}>
+                <div className="text-sm">{formatAlertParams(a.params)}</div>
+              </Card>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

@@ -12,6 +12,14 @@ interface Policy {
   guardrails: Record<string, number | string | boolean>;
 }
 
+const AGENT_NAMES: Record<string, string> = {
+  daily_summary:    "Morning brief",
+  follow_up:        "Follow-up drafter",
+  negotiation:      "Counter-offer drafter",
+  buy_now:          "Buy opportunity scanner",
+  vendor_discovery: "New vendor finder",
+};
+
 export default function AgentSettings() {
   const [policies, setPolicies] = useState<Policy[]>([]);
 
@@ -35,17 +43,25 @@ export default function AgentSettings() {
   }
 
   return (
-    <div className="space-y-3">
-      <h1 className="font-display text-3xl">Agent policies</h1>
+    <div className="space-y-4">
+      <div>
+        <h1 className="font-display text-3xl">Automation policies</h1>
+        <p className="mt-1 text-sm text-forest-500">
+          Toggle each automation on or off. Auto-execute means it runs without asking; off means it only proposes.
+        </p>
+      </div>
       <div className="grid gap-3">
         {policies.map((p) => (
           <Card key={p.id}>
             <div className="flex items-center justify-between">
               <div>
-                <div className="font-medium">{p.agentName}</div>
-                <div className="text-xs text-forest-500 mt-1">
-                  Guardrails: {Object.keys(p.guardrails).length === 0 ? "none" : JSON.stringify(p.guardrails)}
-                </div>
+                <div className="font-medium">{AGENT_NAMES[p.agentName] ?? p.agentName}</div>
+                <div className="text-xs text-forest-400 mt-0.5">{p.agentName}</div>
+                {Object.keys(p.guardrails).length > 0 && (
+                  <div className="text-xs text-forest-400 mt-1">
+                    Guardrails: {Object.entries(p.guardrails).map(([k, v]) => `${k}=${v}`).join(", ")}
+                  </div>
+                )}
               </div>
               <div className="flex gap-2">
                 <Button variant={p.enabled ? "secondary" : "ghost"} onClick={() => update(p, { enabled: !p.enabled })}>
