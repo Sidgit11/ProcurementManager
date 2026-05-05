@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Card } from "@/components/ui/Card";
-import { ChartLine, Lightning, Pulse } from "@phosphor-icons/react/dist/ssr";
+import { ChartLine, Lightning, Pulse, Sparkle } from "@phosphor-icons/react/dist/ssr";
 
 const SECTIONS = [
   {
@@ -21,6 +21,12 @@ const SECTIONS = [
     description: "High-conviction buys: price gap × vendor reliability × validity urgency, with reasoning.",
     Icon: Lightning,
   },
+  {
+    href: "/insights/workshop",
+    label: "Forecast workshop",
+    description: "Try different forecasting methodologies on your captured data — rolling median, EMA, seasonal naive, linear trend. Pick what fits this SKU.",
+    Icon: Sparkle,
+  },
 ];
 
 export default function InsightsHub() {
@@ -33,7 +39,7 @@ export default function InsightsHub() {
           Trends, forecasts, and buy opportunities derived from every quote you&apos;ve captured. Built for weekly and monthly reviews — not the daily inbox.
         </p>
       </div>
-      <div className="grid gap-3 md:grid-cols-3">
+      <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
         {SECTIONS.map(({ href, label, description, Icon }) => (
           <Link key={href} href={href}>
             <Card className="hover:bg-white h-full">

@@ -1,6 +1,8 @@
+import Link from "next/link";
 import { db } from "@/lib/db/client";
 import { sql } from "drizzle-orm";
 import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
 import { currentOrg } from "@/lib/auth/current";
 
 interface Row {
@@ -31,6 +33,12 @@ export default async function Forecasts() {
       <p className="text-sm text-forest-500 mb-4">
         Rolling-median model based on the last 90 days of captured quotes. Forecasts require ≥30 daily observations per SKU.
       </p>
+      <div className="mb-4 flex items-center gap-3">
+        <Link href="/insights/workshop">
+          <Button variant="secondary">Open the forecast workshop →</Button>
+        </Link>
+        <span className="text-xs text-forest-500">Try other models — EMA, seasonal, linear trend.</span>
+      </div>
       <div className="grid gap-3 md:grid-cols-3">
         {rows.map((x) => {
           if (!x.kind || x.kind === "INSUFFICIENT_DATA") {
