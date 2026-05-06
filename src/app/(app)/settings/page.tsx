@@ -2,9 +2,10 @@ import Link from "next/link";
 import { Card } from "@/components/ui/Card";
 
 const ITEMS = [
-  { href: "/settings/users",        label: "Users & roles",   description: "Manage org members" },
-  { href: "/settings/agents",       label: "Agent policies",  description: "Enable/disable agents and tweak guardrails" },
-  { href: "/settings/integrations", label: "Integrations",    description: "Gmail, WhatsApp, Whisper adapter modes" },
+  { href: "/settings/defaults",     label: "Defaults",            description: "Home port, home currency, alert thresholds, lead time tolerance" },
+  { href: "/settings/users",        label: "Users & roles",        description: "Manage org members" },
+  { href: "/settings/agents",       label: "Agent policies",       description: "Enable/disable agents and tweak guardrails" },
+  { href: "/settings/integrations", label: "Channel connections",  description: "Connect Gmail, WhatsApp Cloud, and voice transcription." },
 ];
 
 export default function Settings() {

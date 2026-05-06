@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Card } from "@/components/ui/Card";
-import { ChartLine, Lightning, Pulse, Sparkle } from "@phosphor-icons/react/dist/ssr";
+import { ChartLine, Lightning, Pulse, Sparkle, GridFour } from "@phosphor-icons/react/dist/ssr";
 
 const SECTIONS = [
   {
@@ -8,6 +8,12 @@ const SECTIONS = [
     label: "Price forecasts",
     description: "Rolling-median forecast for the next 14 days, per SKU. Trend, confidence, best buying window.",
     Icon: ChartLine,
+  },
+  {
+    href: "/insights/density",
+    label: "Offer density",
+    description: "Heatmap of quotes per SKU per week. Spot oversupply, shortage, and the right windows to push RFQs.",
+    Icon: GridFour,
   },
   {
     href: "/compare",

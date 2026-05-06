@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
+import Link from "next/link";
 
 interface Vendor {
   id: string;
@@ -19,6 +20,7 @@ export default function NewRfq() {
   );
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [templates, setTemplates] = useState<{ id: string; name: string; category: string; body: string }[]>([]);
   const router = useRouter();
 
   useEffect(() => {
@@ -26,6 +28,13 @@ export default function NewRfq() {
       .then((r) => r.json())
       .then((data: Vendor[]) => setVendors(data))
       .catch(() => toast.error("Failed to load vendors"));
+  }, []);
+
+  useEffect(() => {
+    fetch("/api/rfq/templates")
+      .then((r) => r.json())
+      .then(setTemplates)
+      .catch(() => { /* ignore */ });
   }, []);
 
   async function send() {
@@ -60,6 +69,34 @@ export default function NewRfq() {
       </div>
       <div className="grid grid-cols-2 gap-6">
         <div className="space-y-3">
+          <label className="block">
+            <div className="label-caps">Start from a template (optional)</div>
+            <div className="mt-1 flex gap-2">
+              <select
+                onChange={(e) => {
+                  const t = templates.find((x) => x.id === e.target.value);
+                  if (t) {
+                    setPreview(t.body);
+                    toast.message(`Loaded "${t.name}" — fill in the SKU then send.`);
+                  }
+                }}
+                defaultValue=""
+                className="flex-1 rounded-lg border border-forest-100/60 bg-white px-3 py-2 text-sm"
+              >
+                <option value="">— Pick a template —</option>
+                {(["price_inquiry", "negotiation", "documents"] as const).map((cat) => {
+                  const items = templates.filter((t) => t.category === cat);
+                  if (items.length === 0) return null;
+                  return (
+                    <optgroup key={cat} label={cat === "price_inquiry" ? "Price inquiry" : cat === "negotiation" ? "Negotiation" : "Documents"}>
+                      {items.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+                    </optgroup>
+                  );
+                })}
+              </select>
+              <Link href="/rfq/templates" className="text-xs text-forest-500 hover:underline self-center whitespace-nowrap">Manage templates →</Link>
+            </div>
+          </label>
           <label className="block">
             <div className="label-caps">SKU / spec</div>
             <input

@@ -4,6 +4,7 @@ import { and, eq, desc, sql } from "drizzle-orm";
 import { ComparisonTable, type Row } from "@/components/compare/ComparisonTable";
 import { currentOrg } from "@/lib/auth/current";
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
+import { PriceHistoryChart } from "@/components/compare/PriceHistoryChart";
 
 export default async function Compare({ params }: { params: Promise<{ sku: string }> }) {
   const { sku } = await params;
@@ -64,6 +65,7 @@ export default async function Compare({ params }: { params: Promise<{ sku: strin
           {dedup.length} vendors · trailing 30-day average ${(avg / 1_000_000).toFixed(2)}/kg landed
         </p>
       </div>
+      <PriceHistoryChart sku={sku} />
       <ComparisonTable
         rows={dedup.map((r) => ({
           vendorId: r.vendorId,

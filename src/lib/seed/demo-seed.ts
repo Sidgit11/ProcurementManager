@@ -272,6 +272,56 @@ export async function seedDemo(db: DB) {
     });
   }
 
+  // Seed RFQ templates (3 categories × 2 each)
+  const TEMPLATES = [
+    {
+      name: "Standard price inquiry — spices",
+      category: "price_inquiry",
+      body: "Hi {vendor_name}, hope you're well. Could you share your best price for {product}, CIF Santos, validity 7 days, MOQ 1MT? Including current packaging options. Thanks!",
+      spec: { incoterm: "CIF", destinationPort: "BR-SSZ", validityDays: 7 },
+    },
+    {
+      name: "Standard price inquiry — bulk pulses",
+      category: "price_inquiry",
+      body: "Hi {vendor_name}, please share your best CIF Santos price for {product}, MOQ 20MT, validity 14 days. Mention packaging (50kg PP bags or 25kg) and earliest dispatch window. Thanks.",
+      spec: { incoterm: "CIF", destinationPort: "BR-SSZ", validityDays: 14, moq_mt: 20 },
+    },
+    {
+      name: "Counter-offer — within 5%",
+      category: "negotiation",
+      body: "Hi {vendor_name}, thanks for your quote on {product}. Given current market levels we'd be looking at {target_price}. Would that work? We can move on volume if so. Best regards.",
+      spec: { negotiation: true },
+    },
+    {
+      name: "Counter-offer — request validity extension",
+      category: "negotiation",
+      body: "Hi {vendor_name}, your quote at {their_price} is competitive. Can you extend validity by another 5 days while we lock our buyer side? Also confirm payment terms.",
+      spec: { negotiation: true },
+    },
+    {
+      name: "Document request — CoA + phytosanitary",
+      category: "documents",
+      body: "Hi {vendor_name}, before we proceed on {product}, please share: (1) latest CoA, (2) phytosanitary certificate template, (3) origin certificate. Also confirm B/L copy timing post-dispatch.",
+      spec: { documentTypes: ["CoA", "Phytosanitary", "Origin"] },
+    },
+    {
+      name: "Document request — quality samples",
+      category: "documents",
+      body: "Hi {vendor_name}, can you courier a 200g sample of {product} to our Santos office? We'll need it for a quality check before placing the order. Reference our chat from this week.",
+      spec: { documentTypes: ["Sample"] },
+    },
+  ];
+
+  for (const t of TEMPLATES) {
+    await db.insert(schema.rfqTemplate).values({
+      orgId: DEMO_ORG.id,
+      name: t.name,
+      category: t.category,
+      body: t.body,
+      specScaffold: t.spec as Record<string, unknown>,
+    });
+  }
+
   // Sample alerts
   const sampleAlerts = [
     { sku: "CUMIN-99PURE",     thresholdPerKgUsd: 3.50 },
