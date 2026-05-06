@@ -15,8 +15,10 @@ const COUNTRY_NAMES: Record<string, string> = {
   BR: "Brazil",
 };
 
-function timeAgo(d: Date | null): string {
-  if (!d) return "—";
+function timeAgo(input: Date | string | number | null | undefined): string {
+  if (input == null) return "—";
+  const d = input instanceof Date ? input : new Date(input);
+  if (isNaN(d.getTime())) return "—";
   const m = (Date.now() - d.getTime()) / 60_000;
   if (m < 1) return "just now";
   if (m < 60) return `${Math.round(m)} min ago`;
