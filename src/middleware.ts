@@ -5,6 +5,7 @@ const isProtected = createRouteMatcher([
   "/digest(.*)", "/inbox(.*)", "/compare(.*)", "/vendors(.*)", "/rfq(.*)",
   "/opportunities(.*)", "/insights(.*)", "/agents(.*)", "/alerts(.*)",
   "/notifications(.*)", "/settings(.*)", "/onboarding(.*)", "/ask(.*)",
+  "/po(.*)",
   "/api/(rfq|upload|jobs|vendors|chat|agents|opportunities|alerts|forecast)(.*)",
 ]);
 
