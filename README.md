@@ -2,37 +2,70 @@
 
 End-to-end AI-first procurement OS. Same code that demos to design partners ships to production.
 
-## Quick start
+## Quick start — Demo mode (zero setup)
 
 ```bash
-# 1. Provision Postgres (Neon dev branch via Vercel Marketplace, or local Docker)
-docker run -d --name tp-pg -e POSTGRES_PASSWORD=dev -p 5432:5432 postgres:16
-# Set DATABASE_URL=postgres://postgres:dev@localhost:5432/postgres in .env.local
-
-# 2. Set ANTHROPIC_API_KEY (required for extraction + chat + agents) in .env.local
-# 3. Set Clerk keys (NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY, CLERK_SECRET_KEY) in .env.local
-# 4. Optionally set BLOB_READ_WRITE_TOKEN for file uploads (else falls back to local URLs)
-
-pnpm install
-pnpm db:migrate
-pnpm build:demo-zip
-pnpm seed
-pnpm dev
+DEMO_MODE=1 pnpm dev
 ```
 
-Visit http://localhost:3000/sign-in and sign in with the Clerk dev user. You'll land on `/digest` with the full Polico seed (30 SKUs, 80 vendors, ~1200 quotes, agent policies, sample alerts, chat session).
+Runs entirely in-process (PGlite), bypasses Clerk auth, and falls back to canned LLM responses when no `ANTHROPIC_API_KEY` is set. No database, no accounts required. Visit http://localhost:3000/digest and explore the full UI.
+
+## Production / staging setup
+
+```bash
+# 1. Create .env.local with the following:
+
+DATABASE_URL=postgres://user:pass@host/db?sslmode=require
+ANTHROPIC_API_KEY=sk-ant-...
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
+CLERK_SECRET_KEY=sk_test_...
+CLERK_WEBHOOK_SIGNING_SECRET=whsec_...
+NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
+NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
+NEXT_PUBLIC_CLERK_SIGN_IN_FALLBACK_REDIRECT_URL=/digest
+NEXT_PUBLIC_CLERK_SIGN_UP_FALLBACK_REDIRECT_URL=/onboarding
+
+# Channel adapters: "real" requires the adapter implementation (currently stubs that throw —
+# keep on "mock" until you wire real adapters)
+GMAIL_MODE=mock
+WHATSAPP_CLOUD_MODE=mock
+WHISPER_MODE=stub
+
+# 2. Install dependencies and boot
+pnpm install
+pnpm db:migrate                    # applies migrations including the destructive 0002
+pnpm build:demo-zip                # builds the demo chat-export ZIP for the upload flow
+pnpm seed                          # populates Polico-shaped fixture data into the real DB
+pnpm dev                           # or: pnpm build && pnpm start
+```
+
+Visit http://localhost:3000/sign-in and sign in with your Clerk dev user. You'll land on `/digest` with the full Polico seed (30 SKUs, 80 vendors, ~1200 quotes, agent policies, sample alerts, chat session).
+
+> **Note on migration 0002:** This migration drops and recreates `vendor_contact` with a richer CRM shape. For fresh databases this is safe. If you have existing data in `vendor_contact`, export it first (see the comment at the top of `drizzle/migrations/0002_vendor_crm.sql`).
+
+## Postgres provisioning
+
+```bash
+# Option A: local Docker
+docker run -d --name tp-pg -e POSTGRES_PASSWORD=dev -p 5432:5432 postgres:16
+# DATABASE_URL=postgres://postgres:dev@localhost:5432/postgres
+
+# Option B: Neon dev branch via Vercel Marketplace (recommended for Vercel deploys)
+```
 
 ## Demo flow
 
 1. `/onboarding` — drop the bundled `vendor-patel-chat-export.zip`. Watch the processing panel structure quotes in real time.
 2. `/digest` — see outliers + new quotes for the day.
 3. `/compare/BLACK-PEPPER-5MM` — comparison table across vendors with normalized landed cost.
-4. `/vendors/<id>` — auto-built vendor profile with score tier and recent quotes.
+4. `/vendors/<id>` — auto-built vendor profile with score tier, CRM contacts, preferences, and recent quotes.
 5. `/opportunities` — high-conviction buy opportunities with reasoning + counterfactuals.
 6. `/insights/forecasts` — rolling-median forecasts per SKU.
 7. `/agents` — agent policies + recent runs.
 8. `/alerts` — create a price-below alert; ingest a fixture quote to trigger.
 9. **Cmd+K (or click the lime FAB)** — TradeGenie chat with tool-calling.
+
+All UI features (opportunity hub, CRM, RFQ templates, search, breadcrumbs, table views, in-context price trends, density heatmap) work identically in production. The only fallbacks in demo mode are: Postgres (PGlite), auth (Clerk skipped), and LLM (canned responses when no ANTHROPIC_API_KEY).
 
 ## CI smoke
 

@@ -1,3 +1,6 @@
+-- DESTRUCTIVE: this migration drops and recreates vendor_contact with a richer shape.
+-- For fresh DBs this is a no-op (the old shape was unused). For DBs with data in vendor_contact,
+-- export the old (kind, value) rows first and import them as (kind=email|phone|whatsapp → corresponding column on the new shape) before applying.
 DROP TABLE IF EXISTS "vendor_contact";--> statement-breakpoint
 CREATE TABLE "vendor_contact" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
