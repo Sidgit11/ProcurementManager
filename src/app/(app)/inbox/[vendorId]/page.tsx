@@ -2,7 +2,7 @@ import { db } from "@/lib/db/client";
 import { message, thread, quote, product } from "@/lib/db/schema";
 import { desc, eq, inArray } from "drizzle-orm";
 import { ThreadList } from "@/components/inbox/ThreadList";
-import { MessageBubble } from "@/components/inbox/MessageBubble";
+import { MessageStream, type MsgInput } from "@/components/inbox/MessageStream";
 import { VendorProfileRail } from "@/components/inbox/VendorProfileRail";
 import { currentOrg } from "@/lib/auth/current";
 
@@ -27,34 +27,29 @@ export default async function VendorThread({ params }: { params: Promise<{ vendo
     : [];
   const skuById = new Map(products.map((p) => [p.id, p.sku]));
 
+  const streamMessages: MsgInput[] = messages.map((m) => {
+    const q = byMsg.get(m.id);
+    return {
+      id: m.id,
+      direction: m.direction as "inbound" | "outbound",
+      senderName: m.senderName,
+      body: m.body,
+      sentAtIso: new Date(m.sentAt as unknown as string).toISOString(),
+      classification: m.classification ?? null,
+      quote: q
+        ? {
+            id: q.id,
+            label: `${q.currency} ${(Number(q.unitPriceMinor) / 100).toFixed(2)}/${q.unit}${q.incoterm ? ` ${q.incoterm}` : ""}`,
+            productSku: q.productId ? (skuById.get(q.productId) ?? null) : null,
+          }
+        : undefined,
+    };
+  });
+
   return (
     <div className="grid h-[calc(100vh-100px)] grid-cols-[260px_minmax(0,1fr)_320px]">
       <ThreadList orgId={o.id} selectedVendorId={vendorId} />
-      <div className="overflow-auto p-6">
-        {messages.length === 0 && <div className="text-sm text-forest-500">No messages yet for this vendor.</div>}
-        {messages.map((m) => {
-          const q = byMsg.get(m.id);
-          return (
-            <MessageBubble
-              key={m.id}
-              m={{
-                id: m.id,
-                direction: m.direction,
-                senderName: m.senderName,
-                body: m.body,
-                sentAt: m.sentAt,
-                quote: q
-                  ? {
-                      id: q.id,
-                      label: `${q.currency} ${(Number(q.unitPriceMinor) / 100).toFixed(2)}/${q.unit}${q.incoterm ? ` ${q.incoterm}` : ""}`,
-                      productSku: q.productId ? (skuById.get(q.productId) ?? null) : null,
-                    }
-                  : undefined,
-              }}
-            />
-          );
-        })}
-      </div>
+      <MessageStream messages={streamMessages} />
       <VendorProfileRail orgId={o.id} vendorId={vendorId} />
     </div>
   );
