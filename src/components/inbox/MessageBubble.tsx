@@ -14,7 +14,7 @@ export function MessageBubble({ m }: { m: Msg }) {
   const out = m.direction === "outbound";
   return (
     <div className={out ? "flex justify-end my-2" : "flex justify-start my-2"}>
-      <Card className={out ? "max-w-[70%] bg-forest-700 text-white" : "max-w-[70%] bg-white/80"}>
+      <Card className={out ? "w-full max-w-[560px] bg-forest-700 text-white" : "w-full max-w-[560px] bg-white/80"}>
         <div className="text-xs opacity-70">
           {m.senderName ?? (out ? "You" : "Vendor")} · {new Date(m.sentAt).toLocaleString()}
         </div>
