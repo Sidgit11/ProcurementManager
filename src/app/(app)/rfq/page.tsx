@@ -1,21 +1,30 @@
 import { db } from "@/lib/db/client";
-import { rfq } from "@/lib/db/schema";
-import { eq, desc } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import Link from "next/link";
-import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { Pill } from "@/components/ui/Pill";
 import { currentOrg } from "@/lib/auth/current";
+import { RfqTable } from "@/components/rfq/RfqTable";
 
 export default async function RfqList() {
   const o = await currentOrg();
-  const rfqs = await db
-    .select()
-    .from(rfq)
-    .where(eq(rfq.orgId, o.id))
-    .orderBy(desc(rfq.createdAt))
-    .limit(50);
-
+  const r = await db.execute(sql`
+    SELECT r.id, r.product_name_raw, r.status, r.created_at, r.sent_at,
+           (SELECT COUNT(*)::int FROM rfq_recipient rr WHERE rr.rfq_id = r.id) AS recipient_count,
+           (SELECT COUNT(*)::int FROM rfq_recipient rr WHERE rr.rfq_id = r.id AND rr.response_message_id IS NOT NULL) AS responded_count
+    FROM rfq r
+    WHERE r.org_id = ${o.id}
+    ORDER BY r.created_at DESC
+    LIMIT 100
+  `);
+  const rows = (r.rows as Record<string, unknown>[]).map((row) => ({
+    id: row.id as string,
+    productName: (row.product_name_raw as string | null) ?? "Untitled",
+    status: row.status as string,
+    createdAt: new Date(row.created_at as string).toISOString(),
+    sentAt: row.sent_at ? new Date(row.sent_at as string).toISOString() : null,
+    recipientCount: Number(row.recipient_count ?? 0),
+    respondedCount: Number(row.responded_count ?? 0),
+  }));
   return (
     <div className="space-y-4">
       <div className="flex items-end justify-between">
@@ -28,31 +37,7 @@ export default async function RfqList() {
         </div>
         <Link href="/rfq/new"><Button variant="secondary">New request</Button></Link>
       </div>
-      {rfqs.length === 0 && (
-        <Card>
-          <div className="text-sm text-forest-500">
-            No requests yet. Send your first one to start collecting comparable quotes.
-          </div>
-        </Card>
-      )}
-      <div className="grid gap-3">
-        {rfqs.map((r) => (
-          <Link key={r.id} href={`/rfq/${r.id}`}>
-            <Card className="hover:bg-white">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="font-medium">{r.productNameRaw ?? "Untitled"}</div>
-                  <div className="text-xs text-forest-500">
-                    Created {r.createdAt.toISOString().slice(0, 10)}
-                    {r.sentAt && ` · Sent ${r.sentAt.toISOString().slice(0, 10)}`}
-                  </div>
-                </div>
-                <Pill label={r.status.toUpperCase()} />
-              </div>
-            </Card>
-          </Link>
-        ))}
-      </div>
+      <RfqTable rows={rows} />
     </div>
   );
 }

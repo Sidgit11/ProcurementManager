@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 
 interface Vendor {
   id: string;
@@ -53,52 +54,57 @@ export default function NewRfq() {
   }
 
   return (
-    <div className="grid grid-cols-2 gap-6">
-      <div className="space-y-3">
-        <label className="block">
-          <div className="label-caps">SKU / spec</div>
-          <input
-            className="mt-1 w-full rounded-lg border border-forest-100/60 px-3 py-2 text-sm"
-            value={product}
-            onChange={(e) => setProduct(e.target.value)}
-            placeholder="50 MT Black Pepper 5mm CIF Santos"
-          />
-        </label>
-        <label className="block">
-          <div className="label-caps">Message preview</div>
-          <textarea
-            rows={4}
-            className="mt-1 w-full rounded-lg border border-forest-100/60 px-3 py-2 text-sm"
-            value={preview}
-            onChange={(e) => setPreview(e.target.value)}
-          />
-        </label>
-        <Button
-          onClick={send}
-          variant="secondary"
-          disabled={!product || selected.size === 0}
-        >
-          Send to {selected.size} vendors
-        </Button>
+    <div className="space-y-4">
+      <div className="mb-3">
+        <Breadcrumbs trail={[{ label: "Requests", href: "/rfq" }, { label: "New request" }]} />
       </div>
-      <Card>
-        <div className="label-caps mb-2">Vendors</div>
-        <ul className="max-h-96 overflow-auto divide-y divide-forest-100/30">
-          {vendors.map((v) => (
-            <li key={v.id} className="flex items-center justify-between py-1.5 text-sm">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={selected.has(v.id)}
-                  onChange={(e) => toggleVendor(v.id, e.target.checked)}
-                />
-                {v.name}{" "}
-                {v.country && <span className="text-forest-500">{v.country}</span>}
-              </label>
-            </li>
-          ))}
-        </ul>
-      </Card>
+      <div className="grid grid-cols-2 gap-6">
+        <div className="space-y-3">
+          <label className="block">
+            <div className="label-caps">SKU / spec</div>
+            <input
+              className="mt-1 w-full rounded-lg border border-forest-100/60 px-3 py-2 text-sm"
+              value={product}
+              onChange={(e) => setProduct(e.target.value)}
+              placeholder="50 MT Black Pepper 5mm CIF Santos"
+            />
+          </label>
+          <label className="block">
+            <div className="label-caps">Message preview</div>
+            <textarea
+              rows={4}
+              className="mt-1 w-full rounded-lg border border-forest-100/60 px-3 py-2 text-sm"
+              value={preview}
+              onChange={(e) => setPreview(e.target.value)}
+            />
+          </label>
+          <Button
+            onClick={send}
+            variant="secondary"
+            disabled={!product || selected.size === 0}
+          >
+            Send to {selected.size} vendors
+          </Button>
+        </div>
+        <Card>
+          <div className="label-caps mb-2">Vendors</div>
+          <ul className="max-h-96 overflow-auto divide-y divide-forest-100/30">
+            {vendors.map((v) => (
+              <li key={v.id} className="flex items-center justify-between py-1.5 text-sm">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={selected.has(v.id)}
+                    onChange={(e) => toggleVendor(v.id, e.target.checked)}
+                  />
+                  {v.name}{" "}
+                  {v.country && <span className="text-forest-500">{v.country}</span>}
+                </label>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      </div>
     </div>
   );
 }

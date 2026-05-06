@@ -1,10 +1,13 @@
 import { db } from "@/lib/db/client";
-import { document } from "@/lib/db/schema";
+import { document, vendor } from "@/lib/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { Card } from "@/components/ui/Card";
+import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 
 export default async function Vault({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  const [v] = await db.select({ name: vendor.name }).from(vendor).where(eq(vendor.id, id));
+  const vendorName = v?.name ?? "Vendor";
   const docs = await db
     .select()
     .from(document)
@@ -13,6 +16,13 @@ export default async function Vault({ params }: { params: Promise<{ id: string }
 
   return (
     <div className="space-y-4">
+      <div className="mb-3">
+        <Breadcrumbs trail={[
+          { label: "Vendors", href: "/vendors" },
+          { label: vendorName, href: `/vendors/${id}` },
+          { label: "Memory vault" },
+        ]} />
+      </div>
       <h1 className="font-display text-3xl">Memory Vault</h1>
       <p className="text-sm text-forest-500">
         Documents, certificates, price lists. Vision-extracted metadata on upload.

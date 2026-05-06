@@ -1,58 +1,45 @@
-import Link from "next/link";
 import { db } from "@/lib/db/client";
-import { vendor } from "@/lib/db/schema";
-import { Card } from "@/components/ui/Card";
-import { Pill } from "@/components/ui/Pill";
-import { eq, asc } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import { currentOrg } from "@/lib/auth/current";
+import { VendorsTable } from "@/components/vendors/VendorsTable";
 
 export default async function Vendors() {
   const o = await currentOrg();
-  const rows = await db.select().from(vendor).where(eq(vendor.orgId, o.id)).orderBy(asc(vendor.name));
-
+  const r = await db.execute(sql`
+    SELECT v.id,
+           v.name,
+           v.country,
+           v.score_tier,
+           COUNT(q.id)::int AS quote_count,
+           COUNT(DISTINCT q.product_id)::int AS sku_count,
+           MAX(q.captured_at) AS last_quote_at,
+           (SELECT COUNT(*)::int FROM quality_event qe WHERE qe.vendor_id = v.id) AS issue_count
+    FROM vendor v
+    LEFT JOIN quote q ON q.vendor_id = v.id
+    WHERE v.org_id = ${o.id}
+    GROUP BY v.id
+    ORDER BY v.name
+  `);
+  const rows = (r.rows as Record<string, unknown>[]).map((row) => ({
+    id: row.id as string,
+    name: row.name as string,
+    country: (row.country as string | null) ?? "—",
+    scoreTier: (row.score_tier as string | null) ?? "—",
+    quoteCount: Number(row.quote_count ?? 0),
+    skuCount: Number(row.sku_count ?? 0),
+    lastQuoteAt: row.last_quote_at ? new Date(row.last_quote_at as string).toISOString() : null,
+    issueCount: Number(row.issue_count ?? 0),
+  }));
   return (
-    <div className="mx-auto max-w-5xl space-y-6">
-      {/* Page header */}
+    <div className="space-y-4">
       <div>
-        <div className="label-caps">VENDORS</div>
-        <h1 className="font-display text-3xl mt-1">Everyone you&apos;ve ever been quoted by, automatically</h1>
+        <div className="label-caps">Vendors</div>
+        <h1 className="font-display text-3xl">Everyone you&apos;ve ever been quoted by, automatically</h1>
         <p className="mt-2 text-sm text-forest-500 max-w-2xl">
-          Profiles build themselves from your captured conversations. Score tiers update with every new quote:{" "}
-          <strong>RELIABLE</strong> if fast and competitive, <strong>AGGRESSIVE</strong> if very cheap but
-          inconsistent, <strong>SLOW</strong> if response time drags, <strong>OUTLIER</strong> if consistently
-          overpriced.
+          Profiles build themselves from your captured conversations. Score tiers update with every new quote: RELIABLE if fast and competitive, AGGRESSIVE if very cheap but inconsistent, SLOW if response time drags, OUTLIER if consistently overpriced.
         </p>
       </div>
-
-      {/* Tier legend */}
-      <div className="flex items-center gap-1 text-xs text-forest-500 flex-wrap">
-        <span className="label-caps mr-2">TIER GUIDE:</span>
-        <span className="rounded px-2 py-0.5 bg-forest-100/60">All ({rows.length})</span>
-        <span className="rounded px-2 py-0.5 bg-lime-400/20 text-lime-700">Reliable</span>
-        <span className="rounded px-2 py-0.5 bg-orange-400/20 text-orange-700">Aggressive</span>
-        <span className="rounded px-2 py-0.5 bg-yellow-400/20 text-yellow-700">Slow</span>
-        <span className="rounded px-2 py-0.5 bg-red-400/20 text-red-700">Outlier</span>
-      </div>
-
-      {rows.length === 0 ? (
-        <p className="text-sm text-forest-500">
-          No vendors yet. Upload a WhatsApp chat export on the onboarding page to populate your vendor list.
-        </p>
-      ) : (
-        <div className="grid gap-3 md:grid-cols-3">
-          {rows.map((v) => (
-            <Link key={v.id} href={`/vendors/${v.id}`}>
-              <Card className="hover:bg-white">
-                <div className="flex items-start justify-between">
-                  <div className="font-medium">{v.name}</div>
-                  {v.scoreTier && <Pill label={v.scoreTier} />}
-                </div>
-                <div className="mt-1 text-sm text-forest-500">{v.country ?? "—"}</div>
-              </Card>
-            </Link>
-          ))}
-        </div>
-      )}
+      <VendorsTable rows={rows} />
     </div>
   );
 }

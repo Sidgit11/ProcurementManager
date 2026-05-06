@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Pill } from "@/components/ui/Pill";
+import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { MODEL_CATALOG, type ModelId } from "@/lib/forecast/models";
 import {
   ResponsiveContainer,
@@ -139,6 +140,9 @@ export default function ForecastWorkshop() {
 
   return (
     <div className="space-y-4">
+      <div className="mb-3">
+        <Breadcrumbs trail={[{ label: "Insights", href: "/insights" }, { label: "Forecast workshop" }]} />
+      </div>
       <div>
         <div className="label-caps">Forecast workshop</div>
         <h1 className="font-display text-3xl">Try a model on your data</h1>

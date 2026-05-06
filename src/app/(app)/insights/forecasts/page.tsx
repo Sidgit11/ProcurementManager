@@ -4,6 +4,7 @@ import { sql } from "drizzle-orm";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { currentOrg } from "@/lib/auth/current";
+import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 
 interface Row {
   sku: string;
@@ -29,6 +30,9 @@ export default async function Forecasts() {
 
   return (
     <div>
+      <div className="mb-3">
+        <Breadcrumbs trail={[{ label: "Insights", href: "/insights" }, { label: "Forecasts" }]} />
+      </div>
       <h1 className="font-display text-3xl mb-3">Forecasts (next 14 days)</h1>
       <p className="text-sm text-forest-500 mb-4">
         Rolling-median model based on the last 90 days of captured quotes. Forecasts require ≥30 daily observations per SKU.

@@ -3,6 +3,7 @@ import { purchaseOrder, vendor } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { Card } from "@/components/ui/Card";
 import { Pill } from "@/components/ui/Pill";
+import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 
 export default async function POPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -13,6 +14,9 @@ export default async function POPage({ params }: { params: Promise<{ id: string 
 
   return (
     <div className="space-y-4">
+      <div className="mb-3">
+        <Breadcrumbs trail={[{ label: "Buy opportunities", href: "/opportunities" }, { label: `PO ${po.id.slice(0, 8)}` }]} />
+      </div>
       <div className="flex items-center justify-between">
         <h1 className="font-display text-3xl">Purchase Order {po.id.slice(0, 8)}</h1>
         <Pill label={po.status.toUpperCase()} />

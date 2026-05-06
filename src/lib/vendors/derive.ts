@@ -93,3 +93,14 @@ export function deriveRating(args: {
     risks,
   };
 }
+
+export interface BizMeta { yearsInBusiness: number; establishedYear: number; }
+function hashStr(s: string): number {
+  let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
+  return Math.abs(h);
+}
+export function deriveBizMeta(vendorName: string): BizMeta {
+  const established = 1980 + (hashStr(vendorName + "year") % 40);
+  const years = new Date().getFullYear() - established;
+  return { yearsInBusiness: years, establishedYear: established };
+}

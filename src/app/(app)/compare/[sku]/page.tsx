@@ -3,6 +3,7 @@ import { quote, vendor, product } from "@/lib/db/schema";
 import { and, eq, desc, sql } from "drizzle-orm";
 import { ComparisonTable, type Row } from "@/components/compare/ComparisonTable";
 import { currentOrg } from "@/lib/auth/current";
+import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 
 export default async function Compare({ params }: { params: Promise<{ sku: string }> }) {
   const { sku } = await params;
@@ -53,6 +54,9 @@ export default async function Compare({ params }: { params: Promise<{ sku: strin
 
   return (
     <div className="space-y-4">
+      <div className="mb-3">
+        <Breadcrumbs trail={[{ label: "Quote compare", href: "/compare" }, { label: p.name }]} />
+      </div>
       <div>
         <div className="label-caps">Compare</div>
         <h1 className="font-display text-3xl">{p.name}</h1>

@@ -1,9 +1,13 @@
 import { OrganizationProfile } from "@clerk/nextjs";
+import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 
 export default function Users() {
   if (process.env.DEMO_MODE === "1") {
     return (
       <div className="space-y-3">
+        <div className="mb-3">
+          <Breadcrumbs trail={[{ label: "Settings", href: "/settings" }, { label: "Users & roles" }]} />
+        </div>
         <h1 className="font-display text-3xl">Users &amp; roles</h1>
         <p className="mt-1 text-sm text-forest-500">
           Manage who in your org can sign in, and what they can do.
@@ -19,6 +23,9 @@ export default function Users() {
   }
   return (
     <div className="space-y-3">
+      <div className="mb-3">
+        <Breadcrumbs trail={[{ label: "Settings", href: "/settings" }, { label: "Users & roles" }]} />
+      </div>
       <h1 className="font-display text-3xl">Users &amp; roles</h1>
       <p className="mt-1 text-sm text-forest-500">
         Manage who in your org can sign in, and what they can do.

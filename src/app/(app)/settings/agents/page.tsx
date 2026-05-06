@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { toast } from "sonner";
+import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 
 interface Policy {
   id: string;
@@ -44,6 +45,9 @@ export default function AgentSettings() {
 
   return (
     <div className="space-y-4">
+      <div className="mb-3">
+        <Breadcrumbs trail={[{ label: "Settings", href: "/settings" }, { label: "Agent policies" }]} />
+      </div>
       <div>
         <h1 className="font-display text-3xl">Automation policies</h1>
         <p className="mt-1 text-sm text-forest-500">

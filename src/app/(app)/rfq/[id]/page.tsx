@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Card } from "@/components/ui/Card";
 import { Pill } from "@/components/ui/Pill";
 import { Button } from "@/components/ui/Button";
-import { ArrowLeft } from "@phosphor-icons/react/dist/ssr";
+import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 
 export default async function RfqDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -39,9 +39,8 @@ export default async function RfqDetail({ params }: { params: Promise<{ id: stri
 
   return (
     <div className="space-y-6 max-w-5xl">
-      <div className="flex items-center gap-3">
-        <Link href="/rfq" className="text-forest-500 hover:text-forest-700"><ArrowLeft size={18} /></Link>
-        <div className="label-caps">Request for quote</div>
+      <div className="mb-3">
+        <Breadcrumbs trail={[{ label: "Requests", href: "/rfq" }, { label: r.productNameRaw ?? "Untitled" }]} />
       </div>
 
       <div>

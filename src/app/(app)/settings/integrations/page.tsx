@@ -1,5 +1,6 @@
 import { Card } from "@/components/ui/Card";
 import { Pill } from "@/components/ui/Pill";
+import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 
 const ADAPTERS = [
   { name: "Gmail",          envKey: "GMAIL_MODE",          defaultValue: "mock", productionValue: "real" },
@@ -10,6 +11,9 @@ const ADAPTERS = [
 export default function Integrations() {
   return (
     <div className="space-y-4">
+      <div className="mb-3">
+        <Breadcrumbs trail={[{ label: "Settings", href: "/settings" }, { label: "Integrations" }]} />
+      </div>
       <div>
         <h1 className="font-display text-3xl">Integrations</h1>
         <p className="mt-1 text-sm text-forest-500">
