@@ -1,6 +1,6 @@
 import { db } from "@/lib/db/client";
-import { message, thread, quote } from "@/lib/db/schema";
-import { desc, eq } from "drizzle-orm";
+import { message, thread, quote, product } from "@/lib/db/schema";
+import { desc, eq, inArray } from "drizzle-orm";
 import { ThreadList } from "@/components/inbox/ThreadList";
 import { MessageBubble } from "@/components/inbox/MessageBubble";
 import { VendorProfileRail } from "@/components/inbox/VendorProfileRail";
@@ -20,6 +20,13 @@ export default async function VendorThread({ params }: { params: Promise<{ vendo
   const quotes = await db.select().from(quote).where(eq(quote.vendorId, vendorId));
   const byMsg = new Map(quotes.filter((q) => q.messageId).map((q) => [q.messageId!, q]));
 
+  // Fetch products for any productIds present to get SKUs for comparison links
+  const productIds = Array.from(new Set(quotes.map((q) => q.productId).filter((x): x is string => !!x)));
+  const products = productIds.length
+    ? await db.select({ id: product.id, sku: product.sku }).from(product).where(inArray(product.id, productIds))
+    : [];
+  const skuById = new Map(products.map((p) => [p.id, p.sku]));
+
   return (
     <div className="grid h-[calc(100vh-100px)] grid-cols-[260px_minmax(0,1fr)_320px]">
       <ThreadList orgId={o.id} selectedVendorId={vendorId} />
@@ -36,10 +43,11 @@ export default async function VendorThread({ params }: { params: Promise<{ vendo
                 senderName: m.senderName,
                 body: m.body,
                 sentAt: m.sentAt,
-                quotePill: q
+                quote: q
                   ? {
-                      quoteId: q.id,
+                      id: q.id,
                       label: `${q.currency} ${(Number(q.unitPriceMinor) / 100).toFixed(2)}/${q.unit}${q.incoterm ? ` ${q.incoterm}` : ""}`,
+                      productSku: q.productId ? (skuById.get(q.productId) ?? null) : null,
                     }
                   : undefined,
               }}

@@ -142,13 +142,13 @@ export async function seedDemo(db: DB) {
   };
   const incoterms = ["CIF", "FOB", "DAP"] as const;
 
-  // Threads (one per vendor)
+  // Threads (one per vendor) — placeholder date; will be backfilled after messages are inserted
   const threadInserts = vendors.map((v) => ({
     orgId: DEMO_ORG.id,
     vendorId: v.id,
     channel: "whatsapp_export" as const,
     subject: `Chat with ${v.name}`,
-    lastMessageAt: new Date(),
+    lastMessageAt: new Date(0),
   }));
   const insertedThreads = await db.insert(schema.thread).values(threadInserts).returning();
   const threadByVendor = new Map(insertedThreads.map((t) => [t.vendorId, t.id]));
@@ -251,6 +251,20 @@ export async function seedDemo(db: DB) {
     const inserted = await db.insert(schema.message).values(messageInserts.slice(i, i + CHUNK)).returning({ id: schema.message.id });
     insertedMessages.push(...inserted);
   }
+
+  // Backfill thread.lastMessageAt from the actual most-recent message in each thread.
+  const { sql } = await import("drizzle-orm");
+  await db.execute(sql`
+    UPDATE thread
+    SET last_message_at = sub.max_at
+    FROM (
+      SELECT thread_id, MAX(sent_at) AS max_at
+      FROM message
+      WHERE org_id = ${DEMO_ORG.id}
+      GROUP BY thread_id
+    ) sub
+    WHERE thread.id = sub.thread_id
+  `);
 
   // Patch quote messageIds and insert
   const finalQuotes = quoteInserts.map(({ _msgIndex, ...rest }) => ({
