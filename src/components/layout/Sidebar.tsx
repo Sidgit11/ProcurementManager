@@ -68,7 +68,7 @@ export function Sidebar() {
   }
 
   return (
-    <nav className="flex flex-col w-56 shrink-0 border-r border-forest-100/40 px-3 py-4 text-forest-700">
+    <nav className="flex flex-col w-56 shrink-0 h-full border-r border-forest-100/40 px-3 py-4 text-forest-700">
       <div className="mb-6 px-2">
         <div className="text-xl font-display font-semibold">Tradyon</div>
         <div className="label-caps">Procurement</div>
