@@ -1,14 +1,24 @@
 import { db } from "@/lib/db/client";
-import { vendor, quote } from "@/lib/db/schema";
+import { vendor, quote, vendorContact, vendorNote } from "@/lib/db/schema";
 import { eq, sql, desc } from "drizzle-orm";
 import { Card } from "@/components/ui/Card";
 import { Pill } from "@/components/ui/Pill";
+import { VendorCrmPanel } from "@/components/vendor/VendorCrmPanel";
 
 export default async function VendorDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
   const [v] = await db.select().from(vendor).where(eq(vendor.id, id));
   if (!v) return <div className="text-sm text-forest-500">Vendor not found.</div>;
+
+  const contacts = await db.select().from(vendorContact).where(eq(vendorContact.vendorId, id));
+  const notesRaw = await db.select({ id: vendorNote.id, body: vendorNote.body, createdAt: vendorNote.createdAt })
+    .from(vendorNote).where(eq(vendorNote.vendorId, id)).orderBy(desc(vendorNote.createdAt));
+  const notesForClient = notesRaw.map((n) => ({
+    id: n.id,
+    body: n.body,
+    createdAt: n.createdAt instanceof Date ? n.createdAt.toISOString() : String(n.createdAt),
+  }));
 
   const stats = await db.execute(sql`
     SELECT COUNT(*)::int AS quotes_count,
@@ -33,7 +43,7 @@ export default async function VendorDetail({ params }: { params: Promise<{ id: s
           {v.country ?? "—"} · last activity {s.last_activity?.slice(0, 10) ?? "—"}
         </div>
         <p className="mt-2 text-sm text-forest-400">
-          This profile updates automatically every time {v.name} replies. Edit notes manually below.
+          This profile updates automatically with every captured reply. Contacts, preferences, and notes are managed below.
         </p>
       </div>
 
@@ -82,13 +92,13 @@ export default async function VendorDetail({ params }: { params: Promise<{ id: s
         </table>
       </Card>
 
-      {/* Notes */}
-      <Card>
-        <div className="label-caps mb-2">NOTES</div>
-        <p className="text-sm text-forest-400 italic">
-          Notes section coming soon. Until then, paste notes into your CRM and they&apos;ll be imported once we wire that up.
-        </p>
-      </Card>
+      {/* CRM Panel: Contacts, Preferences, Notes */}
+      <VendorCrmPanel
+        vendorId={id}
+        initialContacts={contacts as never}
+        initialNotes={notesForClient}
+        initialPreferences={(v.preferences ?? {}) as never}
+      />
     </div>
   );
 }

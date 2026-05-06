@@ -52,6 +52,14 @@ export const vendor = pgTable("vendor", {
   aliasGroup: text("alias_group"),
   scoreTier: text("score_tier"),
   manualNotes: text("manual_notes"),
+  preferences: jsonb("preferences").$type<{
+    preferredChannel?: "email" | "whatsapp" | "phone";
+    language?: string;
+    paymentTerms?: string;          // "30/70", "LC at sight", "100% advance", ...
+    currency?: string;              // ISO code
+    leadTimeTolerance?: number;     // days
+    bestTimeToReach?: string;       // free-text
+  }>().default({}),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 }, (t) => ({
   byOrg: index("vendor_org_idx").on(t.orgId),
@@ -60,9 +68,19 @@ export const vendor = pgTable("vendor", {
 export const vendorContact = pgTable("vendor_contact", {
   id: uuid("id").defaultRandom().primaryKey(),
   vendorId: uuid("vendor_id").notNull().references(() => vendor.id),
-  kind: text("kind").notNull(),
-  value: text("value").notNull(),
-});
+  name: text("name").notNull(),
+  role: text("role"),                                          // "Sales Manager", "Founder", etc.
+  email: text("email"),
+  phone: text("phone"),
+  whatsapp: text("whatsapp"),
+  isPrimary: boolean("is_primary").notNull().default(false),
+  preferredChannel: text("preferred_channel"),                 // "email" | "whatsapp" | "phone"
+  language: text("language"),                                  // "en" | "pt" | "hi" | ...
+  notes: text("notes"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (t) => ({
+  byVendor: index("vendor_contact_vendor_idx").on(t.vendorId),
+}));
 
 export const thread = pgTable("thread", {
   id: uuid("id").defaultRandom().primaryKey(),

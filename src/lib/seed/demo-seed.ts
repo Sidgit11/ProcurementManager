@@ -6,6 +6,7 @@ import { computeLandedCostUsdPerKgMicros } from "../normalization/landed-cost";
 import type { Incoterm } from "../normalization/incoterm";
 import { DEFAULT_POLICIES } from "../agents/policy";
 import { DEMO_ORG, DEMO_USER } from "../demo/is-demo";
+import { derivePoc } from "../vendors/derive";
 
 type DB = PgliteDatabase<typeof schema>;
 
@@ -77,6 +78,60 @@ export async function seedDemo(db: DB) {
 
   // Vendors
   const vendors = await db.insert(schema.vendor).values(buildVendors(DEMO_ORG.id)).returning();
+
+  // Seed contacts (1 primary, sometimes 1-2 secondary) + preferences per vendor
+  const SECONDARY_ROLES = ["Logistics", "Accounts", "QA Lead"];
+  const PAYMENT_TERMS = ["30/70", "100% advance", "LC at sight", "50% advance, 50% against B/L"];
+  const PREFERRED_CHANNELS: Array<"email" | "whatsapp" | "phone"> = ["email", "whatsapp", "phone"];
+  const LANGUAGES_BY_COUNTRY: Record<string, string[]> = {
+    IN: ["en", "hi"],
+    VN: ["en", "vi"],
+    ID: ["en", "id"],
+    TR: ["en", "tr"],
+    BR: ["en", "pt"],
+  };
+
+  for (let i = 0; i < vendors.length; i++) {
+    const v = vendors[i];
+    const poc = derivePoc(v.name, v.country, v.primaryContact);
+    await db.insert(schema.vendorContact).values({
+      vendorId: v.id,
+      name: poc.name,
+      role: poc.role,
+      email: poc.email,
+      phone: poc.phone,
+      whatsapp: poc.whatsapp,
+      isPrimary: true,
+      preferredChannel: PREFERRED_CHANNELS[i % 3],
+      language: (LANGUAGES_BY_COUNTRY[v.country ?? "IN"] ?? ["en"])[0],
+    });
+    // ~30% of vendors get a secondary contact
+    if (i % 3 === 0) {
+      const secondaryName = poc.name.split(" ")[0] + (i % 2 === 0 ? "'s assistant" : "'s logistics lead");
+      await db.insert(schema.vendorContact).values({
+        vendorId: v.id,
+        name: secondaryName,
+        role: SECONDARY_ROLES[i % SECONDARY_ROLES.length],
+        email: `team${i}@${v.name.toLowerCase().replace(/\s+/g, "")}.com`,
+        phone: poc.phone,
+        whatsapp: poc.whatsapp,
+        isPrimary: false,
+        preferredChannel: "email",
+        language: (LANGUAGES_BY_COUNTRY[v.country ?? "IN"] ?? ["en"])[0],
+      });
+    }
+    // Preferences
+    const { eq: eqDrizzle } = await import("drizzle-orm");
+    await db.update(schema.vendor).set({
+      preferences: {
+        preferredChannel: PREFERRED_CHANNELS[i % 3],
+        language: (LANGUAGES_BY_COUNTRY[v.country ?? "IN"] ?? ["en"])[0],
+        paymentTerms: PAYMENT_TERMS[i % PAYMENT_TERMS.length],
+        currency: "USD",
+        leadTimeTolerance: 30 + (i % 4) * 7,
+      },
+    }).where(eqDrizzle(schema.vendor.id, v.id));
+  }
 
   const fxPerUsd = new Map([
     ["USD", 1.0], ["BRL", 5.10], ["INR", 82.50], ["EUR", 0.92],

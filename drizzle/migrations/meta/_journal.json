@@ -15,6 +15,13 @@
       "when": 1778000988957,
       "tag": "0001_cooing_lucky_pierre",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1746460800000,
+      "tag": "0002_vendor_crm",
+      "breakpoints": true
     }
   ]
 }
