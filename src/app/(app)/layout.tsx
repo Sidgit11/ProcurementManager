@@ -1,3 +1,6 @@
+// Every page under (app) reads org-scoped data — never prerender at build time.
+export const dynamic = "force-dynamic";
+
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Topbar } from "@/components/layout/Topbar";
 import { Toaster } from "sonner";
