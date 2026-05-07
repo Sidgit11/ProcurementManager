@@ -2,8 +2,10 @@ import { db } from "../db/client";
 import { extractionJob, message } from "../db/schema";
 import { eq, and, isNull } from "drizzle-orm";
 import { processMessage } from "../extraction/pipeline";
+import { isDemo } from "../demo/is-demo";
 
-export async function tickOnce(maxMessages = 25): Promise<{ processed: number; jobsActive: number }> {
+export async function tickOnce(maxMessagesArg?: number): Promise<{ processed: number; jobsActive: number }> {
+  const maxMessages = maxMessagesArg ?? (isDemo() ? 200 : 25);
   // Promote one pending job to running
   const pending = await db.select().from(extractionJob).where(eq(extractionJob.status, "pending")).limit(1);
   if (pending.length) {

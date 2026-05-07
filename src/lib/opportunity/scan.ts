@@ -4,8 +4,12 @@ import { sql } from "drizzle-orm";
 import { scoreOpportunity } from "./score";
 import { draftReasoning } from "./reason";
 import type { Tier } from "../scoring/vendor";
+import { isDemo } from "../demo/is-demo";
 
 export async function scanForOpportunities(orgId: string, threshold = 0.04) {
+  // In demo mode, opportunities are curated at seed time — skip the scanner
+  // to prevent the daily cron from adding duplicates on top of the 5 seeded picks.
+  if (isDemo()) return { created: 0 };
   const r = await db.execute(sql`
     WITH med AS (
       SELECT q.product_id,

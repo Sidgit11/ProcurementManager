@@ -67,6 +67,16 @@ export async function POST(req: NextRequest) {
   // Enqueue extraction
   const job = await enqueueChatExportJob(o.id, blobUrl, parsed.messages.length);
 
+  // In demo mode, drain the job inline before responding so the processing page
+  // shows 100% immediately (no Anthropic calls — regex extraction is instant).
+  if (process.env.DEMO_MODE === "1") {
+    const { tickOnce } = await import("@/lib/jobs/runner");
+    for (let i = 0; i < 3; i++) {
+      const r = await tickOnce(200);
+      if (r.processed === 0) break;
+    }
+  }
+
   return NextResponse.json({
     jobId: job.id,
     total: parsed.messages.length,

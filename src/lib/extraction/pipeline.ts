@@ -6,8 +6,13 @@ import { extractQuoteFromMessage } from "./extractor";
 import { computeLandedCostUsdPerKgMicros } from "../normalization/landed-cost";
 import type { Incoterm } from "../normalization/incoterm";
 import { evaluateOnQuote } from "../alerts/evaluate";
+import { isDemo } from "../demo/is-demo";
+import { processMessageDemo } from "./demo-extract";
 
 export async function processMessage(messageId: string): Promise<{ created: boolean }> {
+  if (isDemo()) {
+    return processMessageDemo(messageId);
+  }
   const [m] = await db.select().from(message).where(eq(message.id, messageId));
   if (!m || m.classification) return { created: false };
 
