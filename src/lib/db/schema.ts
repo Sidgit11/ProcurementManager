@@ -177,7 +177,7 @@ export const fxRateSnapshot = pgTable("fx_rate_snapshot", {
   id: uuid("id").defaultRandom().primaryKey(),
   base: text("base").notNull().default("USD"),
   quote: text("quote").notNull(),
-  rate: integer("rate_micros").notNull(),
+  rate: bigint("rate_micros", { mode: "number" }).notNull(),
   capturedAt: timestamp("captured_at").notNull().defaultNow(),
 }, (t) => ({
   byPair: uniqueIndex("fx_pair_uniq").on(t.base, t.quote),

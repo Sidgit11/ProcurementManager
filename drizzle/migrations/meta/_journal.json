@@ -22,6 +22,13 @@
       "when": 1746460800000,
       "tag": "0002_vendor_crm",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1778176280468,
+      "tag": "0003_fx_rate_bigint",
+      "breakpoints": true
     }
   ]
 }
