@@ -45,13 +45,15 @@ async function initDemo(): Promise<AnyDb> {
 }
 
 if (!globalThis.__tp_db_promise__) {
-  if (process.env.DEMO_MODE === "1") {
+  // Use real Postgres whenever DATABASE_URL is set (works for both prod and demo-on-Vercel).
+  // Fall back to PGlite only for local DEMO_MODE without DATABASE_URL.
+  const usePglite = process.env.DEMO_MODE === "1" && !process.env.DATABASE_URL;
+  if (usePglite) {
     globalThis.__tp_db_promise__ = initDemo().then((d) => {
       globalThis.__tp_db__ = d;
       return d;
     });
   } else {
-    // Synchronous init for real Postgres — db is available immediately.
     const d = initNonDemo();
     globalThis.__tp_db__ = d;
     globalThis.__tp_db_promise__ = Promise.resolve(d);
