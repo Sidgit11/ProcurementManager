@@ -9,9 +9,15 @@ export async function currentOrg() {
   await getDb();
 
   if (isDemo()) {
-    const [o] = await db.select().from(org).where(eq(org.id, DEMO_ORG.id));
-    if (o) return o;
-    return DEMO_ORG; // fallback if seed hasn't run yet
+    // Demo mode: try the canonical demo id first, then by clerkOrgId, then any org in the DB.
+    // (The Polico production seed creates org with a random UUID — fall through to it.)
+    const byId = await db.select().from(org).where(eq(org.id, DEMO_ORG.id));
+    if (byId[0]) return byId[0];
+    const byClerk = await db.select().from(org).where(eq(org.clerkOrgId, DEMO_ORG.clerkOrgId));
+    if (byClerk[0]) return byClerk[0];
+    const any = await db.select().from(org).limit(1);
+    if (any[0]) return any[0];
+    return DEMO_ORG;
   }
   const { userId, orgId: clerkOrgId } = await auth();
   if (!userId) throw new Error("unauthenticated");
@@ -31,8 +37,12 @@ export async function currentUser() {
   await getDb();
 
   if (isDemo()) {
-    const [u] = await db.select().from(user).where(eq(user.id, DEMO_USER.id));
-    if (u) return u;
+    const byId = await db.select().from(user).where(eq(user.id, DEMO_USER.id));
+    if (byId[0]) return byId[0];
+    // Fall through: any user in the seeded org
+    const o = await currentOrg();
+    const any = await db.select().from(user).where(eq(user.orgId, o.id)).limit(1);
+    if (any[0]) return any[0];
     return DEMO_USER;
   }
   const { userId } = await auth();
