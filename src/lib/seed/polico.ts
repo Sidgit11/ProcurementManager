@@ -9,6 +9,28 @@ import { seedExtras } from "./extras";
 import { derivePoc } from "../vendors/derive";
 import { eq, sql } from "drizzle-orm";
 
+const ORIGIN_PORTS: Record<string, string> = {
+  IN: "Mundra",          // top Indian export port for spices
+  VN: "Haiphong",
+  ID: "Tanjung Priok",
+  TR: "Mersin",          // south Turkey near Malatya
+  CN: "Shanghai",
+  EG: "Alexandria",
+  ES: "Valencia",
+  US: "Long Beach",
+  PE: "Callao",
+  CA: "Vancouver",
+  PK: "Karachi",
+  BR: "Santos",
+};
+
+function portFor(incoterm: string, country: string | null): string {
+  if (incoterm === "FOB" || incoterm === "EXW") {
+    return ORIGIN_PORTS[country ?? ""] ?? "origin port";
+  }
+  return "Navegantes";
+}
+
 export async function seedPolico() {
   // Create org + user
   const [o] = await db.insert(org).values({
@@ -159,7 +181,7 @@ export async function seedPolico() {
           channel: "whatsapp_export",
           direction: "inbound",
           senderName: v.name,
-          body: `${p.name} available — $${unitPriceUsd.toFixed(2)}/${unit} ${incoterm} Navegantes. MOQ 1${unit === "MT" ? "MT" : "kg"}. Validity 7 days.`,
+          body: `${p.name} available — $${unitPriceUsd.toFixed(2)}/${unit} ${incoterm} ${portFor(incoterm, v.country)}. MOQ 1${unit === "MT" ? "MT" : "kg"}. Validity 7 days.`,
           sentAt,
           classification: "quote",
         });
@@ -306,14 +328,94 @@ export async function seedPolico() {
   // Seed extras for AI features (agent_policy, vendor_note, quality_event, document, alert, chat_session)
   await seedExtras(o.id);
 
-  // Post-seed jobs: scoring + opportunity scan + forecasts
+  // Post-seed jobs: scoring + forecasts
   const { recomputeVendorScores } = await import("../scoring/job");
   await recomputeVendorScores(o.id);
   console.log("Recomputed vendor scores.");
 
-  const { scanForOpportunities } = await import("../opportunity/scan");
-  const oppResult = await scanForOpportunities(o.id);
-  console.log(`Buy-opportunity scan: ${oppResult.created} opportunities.`);
+  // Re-query all data for curated opportunity picks
+  const allQuotes = await db.select().from(quote).where(eq(quote.orgId, o.id));
+  const allVendors = await db.select().from(vendor).where(eq(vendor.orgId, o.id));
+  const allProducts = await db.select().from(product).where(eq(product.orgId, o.id));
+  const vendorById = new Map(allVendors.map((v) => [v.id, v]));
+  const productById = new Map(allProducts.map((p) => [p.id, p]));
+
+  // Helper: pick one quote per SKU with optional tier preference
+  function pickQuote(opts: { sku: string; preferTier?: string }): typeof allQuotes[number] | null {
+    const prod = allProducts.find((p) => p.sku === opts.sku);
+    if (!prod) return null;
+    let candidates = allQuotes.filter((q) =>
+      q.productId === prod.id &&
+      q.landedCostUsdPerKg != null
+    );
+    if (opts.preferTier) {
+      const preferredCandidates = candidates.filter((q) => {
+        const v = vendorById.get(q.vendorId);
+        return v?.scoreTier === opts.preferTier;
+      });
+      if (preferredCandidates.length > 0) candidates = preferredCandidates;
+    }
+    candidates.sort((a, b) => Number(a.landedCostUsdPerKg) - Number(b.landedCostUsdPerKg));
+    return candidates[0] ?? null;
+  }
+
+  const opportunityPicks: Array<{ sku: string; preferTier?: string; expiresInDays: number; rationaleVariant: "high-gap" | "urgent" | "reliable-deep" | "premium-deal" | "competitor-undercut" }> = [
+    { sku: "CASSIA-CINN",    preferTier: "RELIABLE",   expiresInDays: 5,  rationaleVariant: "reliable-deep" },
+    { sku: "CUMIN-SEEDS",    preferTier: "RELIABLE",   expiresInDays: 1,  rationaleVariant: "urgent" },
+    { sku: "DRIED-VEG-MIX",  preferTier: "AGGRESSIVE", expiresInDays: 7,  rationaleVariant: "competitor-undercut" },
+    { sku: "APRICOTS-DRIED",                            expiresInDays: 4,  rationaleVariant: "premium-deal" },
+    { sku: "ONION-FLAKES",   preferTier: "AGGRESSIVE", expiresInDays: 6,  rationaleVariant: "high-gap" },
+  ];
+
+  const { buyOpportunity } = await import("../db/schema");
+  let oppNum = 0;
+  for (const pick of opportunityPicks) {
+    const q = pickQuote(pick);
+    if (!q) continue;
+    const v = vendorById.get(q.vendorId)!;
+    const p = q.productId ? productById.get(q.productId) : null;
+    const landed = Number(q.landedCostUsdPerKg);
+    const priceLabel = `${q.currency} ${(Number(q.unitPriceMinor) / 100).toFixed(2)}/${q.unit}`;
+    const landedLabel = `$${(landed / 1_000_000).toFixed(2)}/kg`;
+
+    let reasoning = "";
+    let counterfactual = "";
+    switch (pick.rationaleVariant) {
+      case "reliable-deep":
+        reasoning = `${v.name} is quoting ${p?.name ?? "this SKU"} at ${priceLabel} (${landedLabel} landed) — about 7% below the trailing 30-day median. Score tier RELIABLE: clean delivery history, fast response on RFQs.`;
+        counterfactual = "Two other vendors in your pool are 4-6% higher for the same grade. Book the volume.";
+        break;
+      case "urgent":
+        reasoning = `${v.name} just sent ${p?.name ?? "this SKU"} at ${priceLabel} (${landedLabel} landed). Validity expires within 24 hours — they need a yes or it goes to the next buyer.`;
+        counterfactual = "If you let this lapse, expect to wait 5-7 days for the next quote round at likely 2-4% higher.";
+        break;
+      case "competitor-undercut":
+        reasoning = `${v.name} is undercutting your other dried-veg suppliers by ~6% on ${p?.name ?? "this SKU"} (${priceLabel}, landed ${landedLabel}). AGGRESSIVE tier — sample-test the first container.`;
+        counterfactual = "Your other veg vendors are quoting 4-7% above this. Worth a small first-trial order before committing volume.";
+        break;
+      case "premium-deal":
+        reasoning = `${v.name} is offering ${p?.name ?? "this SKU"} at ${priceLabel} (${landedLabel} landed) — a rare allocation discount from a premium-positioning vendor.`;
+        counterfactual = "If you skip, they'll go back to standard premium pricing. Locking now means above-spec quality at a non-premium price for one cycle.";
+        break;
+      case "high-gap":
+        reasoning = `${v.name} is quoting ${p?.name ?? "this SKU"} at ${priceLabel} (${landedLabel} landed) — the biggest price gap in your pool right now, ~9% below median.`;
+        counterfactual = "Your other vendors are clustered near the median; this one is the outlier downside. Verify lead time before committing.";
+        break;
+    }
+
+    await db.insert(buyOpportunity).values({
+      orgId: o.id,
+      quoteId: q.id,
+      vendorId: q.vendorId,
+      productId: q.productId,
+      score: 60_000 + oppNum * 8_000 + Math.floor(Math.random() * 15_000),
+      reasoningText: reasoning,
+      counterfactualText: counterfactual,
+      expiresAt: new Date(Date.now() + pick.expiresInDays * 86_400_000),
+    });
+    oppNum++;
+  }
+  console.log(`[polico] Created ${oppNum} curated buy opportunities.`);
 
   const { computeForecasts } = await import("../forecast/job");
   await computeForecasts(o.id);

@@ -12,6 +12,7 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
+    "db:reset": "tsx scripts/db-reset.ts",
     "seed": "tsx scripts/seed.ts",
     "build:demo-zip": "tsx scripts/build-demo-zip.ts",
     "demo:smoke": "tsx scripts/demo-smoke.ts"

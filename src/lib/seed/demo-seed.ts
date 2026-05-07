@@ -8,6 +8,28 @@ import { DEFAULT_POLICIES } from "../agents/policy";
 import { DEMO_ORG, DEMO_USER } from "../demo/is-demo";
 import { derivePoc } from "../vendors/derive";
 
+const ORIGIN_PORTS: Record<string, string> = {
+  IN: "Mundra",          // top Indian export port for spices
+  VN: "Haiphong",
+  ID: "Tanjung Priok",
+  TR: "Mersin",          // south Turkey near Malatya
+  CN: "Shanghai",
+  EG: "Alexandria",
+  ES: "Valencia",
+  US: "Long Beach",
+  PE: "Callao",
+  CA: "Vancouver",
+  PK: "Karachi",
+  BR: "Santos",
+};
+
+function portFor(incoterm: string, country: string | null): string {
+  if (incoterm === "FOB" || incoterm === "EXW") {
+    return ORIGIN_PORTS[country ?? ""] ?? "origin port";
+  }
+  return "Navegantes";
+}
+
 type DB = PgliteDatabase<typeof schema>;
 
 export async function seedDemo(db: DB) {
@@ -207,7 +229,7 @@ export async function seedDemo(db: DB) {
           channel: "whatsapp_export",
           direction: "inbound",
           senderName: v.name,
-          body: `${p.name} available — $${unitPriceUsd.toFixed(2)}/${unit} ${incoterm} Navegantes. MOQ 1${unit === "MT" ? "MT" : "kg"}. Validity 7 days.`,
+          body: `${p.name} available — $${unitPriceUsd.toFixed(2)}/${unit} ${incoterm} ${portFor(incoterm, v.country)}. MOQ 1${unit === "MT" ? "MT" : "kg"}. Validity 7 days.`,
           sentAt,
           classification: "quote",
         });
@@ -376,24 +398,94 @@ export async function seedDemo(db: DB) {
     await db.update(schema.vendor).set({ scoreTier: tier }).where(eq(schema.vendor.id, v.id));
   }
 
-  // Generate buy opportunities from the cheapest quotes
-  const sortedByLanded = allQuotes.filter((q) => q.landedCostUsdPerKg != null).sort((a, b) => Number(a.landedCostUsdPerKg) - Number(b.landedCostUsdPerKg));
-  const oppCount = Math.min(10, sortedByLanded.length);
-  for (let i = 0; i < oppCount; i++) {
-    const q = sortedByLanded[i];
-    const v = vendors.find((x) => x.id === q.vendorId)!;
-    const p = products.find((x) => x.id === q.productId);
+  // Re-query vendors after tier update
+  const allVendors = await db.select().from(schema.vendor).where(eq(schema.vendor.orgId, DEMO_ORG.id));
+  const vendorById = new Map(allVendors.map((v) => [v.id, v]));
+  const productById = new Map(products.map((p) => [p.id, p]));
+
+  // Helper: pick one quote per SKU with optional tier preference
+  function pickQuote(opts: { sku: string; preferTier?: string }): typeof allQuotes[number] | null {
+    const product = products.find((p) => p.sku === opts.sku);
+    if (!product) return null;
+    let candidates = allQuotes.filter((q) =>
+      q.productId === product.id &&
+      q.landedCostUsdPerKg != null
+    );
+    if (opts.preferTier) {
+      const preferredCandidates = candidates.filter((q) => {
+        const v = vendorById.get(q.vendorId);
+        return v?.scoreTier === opts.preferTier;
+      });
+      if (preferredCandidates.length > 0) candidates = preferredCandidates;
+    }
+    // Sort by lowest landed cost (best deal first)
+    candidates.sort((a, b) => Number(a.landedCostUsdPerKg) - Number(b.landedCostUsdPerKg));
+    return candidates[0] ?? null;
+  }
+
+  // Define the 5 picks with variety
+  const opportunityPicks: Array<{ sku: string; preferTier?: string; expiresInDays: number; rationaleVariant: "high-gap" | "urgent" | "reliable-deep" | "premium-deal" | "competitor-undercut" }> = [
+    // 1. High-conviction: cassia from Tuan Minh (RELIABLE), strong gap
+    { sku: "CASSIA-CINN",    preferTier: "RELIABLE",   expiresInDays: 5,  rationaleVariant: "reliable-deep" },
+    // 2. Urgent expiry: cumin, 24h validity
+    { sku: "CUMIN-SEEDS",    preferTier: "RELIABLE",   expiresInDays: 1,  rationaleVariant: "urgent" },
+    // 3. Aggressive vendor undercutting market on dried veg
+    { sku: "DRIED-VEG-MIX",  preferTier: "AGGRESSIVE", expiresInDays: 7,  rationaleVariant: "competitor-undercut" },
+    // 4. Apricots — premium positioning vendor with a brief allocation deal
+    { sku: "APRICOTS-DRIED",                            expiresInDays: 4,  rationaleVariant: "premium-deal" },
+    // 5. Onion flakes — biggest gap from a Chinese vendor
+    { sku: "ONION-FLAKES",   preferTier: "AGGRESSIVE", expiresInDays: 6,  rationaleVariant: "high-gap" },
+  ];
+
+  let oppNum = 0;
+  for (const pick of opportunityPicks) {
+    const q = pickQuote(pick);
+    if (!q) continue;
+    const v = vendorById.get(q.vendorId)!;
+    const p = q.productId ? productById.get(q.productId) : null;
+    const landed = Number(q.landedCostUsdPerKg);
+    const priceLabel = `${q.currency} ${(Number(q.unitPriceMinor) / 100).toFixed(2)}/${q.unit}`;
+    const landedLabel = `$${(landed / 1_000_000).toFixed(2)}/kg`;
+
+    let reasoning = "";
+    let counterfactual = "";
+    switch (pick.rationaleVariant) {
+      case "reliable-deep":
+        reasoning = `${v.name} is quoting ${p?.name ?? "this SKU"} at ${priceLabel} (${landedLabel} landed) — about 7% below the trailing 30-day median. Score tier RELIABLE: clean delivery history, fast response on RFQs, BC1 grade with verified 8.5% oil content.`;
+        counterfactual = "Two other vendors in your pool are 4-6% higher for the same grade. This is a textbook 'long-term partner with a good price' setup — book the volume.";
+        break;
+      case "urgent":
+        reasoning = `${v.name} just sent ${p?.name ?? "this SKU"} at ${priceLabel} (${landedLabel} landed). Validity expires within 24 hours — they need a yes or it goes to the next buyer. Price is competitive, RELIABLE tier on past supply.`;
+        counterfactual = "If you let this lapse, expect to wait 5-7 days for the next quote round at likely 2-4% higher.";
+        break;
+      case "competitor-undercut":
+        reasoning = `${v.name} is undercutting your other dried-veg suppliers by ~6% on ${p?.name ?? "this SKU"} (${priceLabel}, landed ${landedLabel}). AGGRESSIVE tier — they hit price aggressively but have inconsistent QC; sample-test the first container.`;
+        counterfactual = "Your other Egyptian and Chinese veg vendors are quoting 4-7% above this. Worth a small first-trial order before committing volume.";
+        break;
+      case "premium-deal":
+        reasoning = `${v.name} is offering ${p?.name ?? "this SKU"} at ${priceLabel} (${landedLabel} landed) — a rare allocation discount from a premium-positioning vendor. Their average is usually 8-12% above this price.`;
+        counterfactual = "If you skip, they'll go back to standard premium pricing. Locking now means above-spec quality at a non-premium price for one cycle.";
+        break;
+      case "high-gap":
+        reasoning = `${v.name} is quoting ${p?.name ?? "this SKU"} at ${priceLabel} (${landedLabel} landed) — the biggest price gap in your pool right now, ~9% below median. AGGRESSIVE tier on volume; check loading-port lead time.`;
+        counterfactual = "Your other vendors are clustered near the median; this one is the outlier downside. Verify lead time before committing.";
+        break;
+    }
+
     await db.insert(schema.buyOpportunity).values({
       orgId: DEMO_ORG.id,
       quoteId: q.id,
       vendorId: q.vendorId,
       productId: q.productId,
-      score: 80_000 - i * 5_000,
-      reasoningText: `${v.name} is quoting ${p?.name ?? q.productNameRaw} at ${q.currency} ${(Number(q.unitPriceMinor)/100).toFixed(2)}/${q.unit} ${q.incoterm} — below the trailing 30-day median for this SKU.`,
-      counterfactualText: `Other vendors in the pool are higher for this SKU.`,
-      expiresAt: q.validityUntil,
+      score: 60_000 + oppNum * 8_000 + Math.floor(rand() * 15_000),
+      reasoningText: reasoning,
+      counterfactualText: counterfactual,
+      expiresAt: new Date(Date.now() + pick.expiresInDays * 86_400_000),
     });
+    oppNum++;
   }
+
+  const oppCount = oppNum;
 
   // Sample forecasts
   for (let i = 0; i < products.length; i++) {
