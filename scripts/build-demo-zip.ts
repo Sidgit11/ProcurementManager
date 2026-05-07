@@ -6,11 +6,11 @@ import { join } from "node:path";
 async function main() {
   const start = new Date(Date.now() - 180 * 24 * 3600 * 1000);
   const skuChoices = [
-    "Black Pepper 5mm $5.20/kg CIF Santos, MOQ 1MT, validity 7 days. Payment 30/70.",
-    "Cumin 99% pure $3.85/kg CIF Santos, MOQ 2MT, validity 5 days. Payment 100% advance.",
-    "Turmeric 5% curcumin $2.05/kg FOB Mundra, MOQ 5MT, validity 10 days. Payment LC at sight.",
-    "Chickpeas 12mm $1100/MT CIF Santos, MOQ 20MT, validity 14 days.",
-    "Cardamom large $28.50/kg CIF Santos, MOQ 200kg, validity 7 days.",
+    "Cassia Cinnamon Sticks $2.40/kg CIF Navegantes, MOQ 1MT, validity 7 days. Payment 30/70.",
+    "Dried Apricots #1 grade $4.50/kg CIF Navegantes, MOQ 5MT, validity 5 days. Payment LC at sight.",
+    "Cumin Seeds whole $4.10/kg FOB Mundra, MOQ 2MT, validity 10 days.",
+    "Dried Mixed Vegetables $3.30/kg CIF Navegantes, MOQ 5MT, validity 14 days.",
+    "Dehydrated Onion Flakes $3.85/kg CIF Navegantes, MOQ 3MT, validity 7 days.",
   ];
 
   const lines: string[] = [];
@@ -21,13 +21,13 @@ async function main() {
     const yy = String(day.getFullYear()).slice(2);
     const stamp = (h: number, m: number) => `[${dd}/${mm}/${yy}, ${h}:${String(m).padStart(2, "0")}:00]`;
 
-    lines.push(`${stamp(10 + (d % 6), 15 + d)} Patel Spices: ${skuChoices[d % skuChoices.length]}`);
+    lines.push(`${stamp(10 + (d % 6), 15 + d)} Tuan Minh Trading And Production Co., Ltd.: ${skuChoices[d % skuChoices.length]}`);
     if (d % 4 === 0) {
-      lines.push(`${stamp(10 + (d % 6), 20 + d)} Patel Spices: <attached: pricelist-${d}.pdf>`);
+      lines.push(`${stamp(10 + (d % 6), 20 + d)} Tuan Minh Trading And Production Co., Ltd.: <attached: pricelist-${d}.pdf>`);
     }
     if (d % 5 === 0) {
       lines.push(`${stamp(10 + (d % 6), 25 + d)} You: Validity?`);
-      lines.push(`${stamp(10 + (d % 6), 28 + d)} Patel Spices: 7 days. Payment 30/70.`);
+      lines.push(`${stamp(10 + (d % 6), 28 + d)} Tuan Minh Trading And Production Co., Ltd.: 7 days. Payment 30/70.`);
     }
   }
 

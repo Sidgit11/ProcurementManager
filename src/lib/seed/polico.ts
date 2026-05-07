@@ -1,7 +1,7 @@
 import { db } from "../db/client";
 import { org, user, product, vendor, thread, message, quote, vendorContact, rfqTemplate } from "../db/schema";
 import { POLICO_CATALOG, BASE_PRICES_USD_PER_KG } from "./catalog";
-import { buildVendors } from "./vendors";
+import { buildVendors, POLICO_VENDORS } from "./vendors";
 import { computeLandedCostUsdPerKgMicros } from "../normalization/landed-cost";
 import type { Incoterm } from "../normalization/incoterm";
 import { seedFxAndCorridors } from "./fx-and-corridors";
@@ -14,7 +14,7 @@ export async function seedPolico() {
   const [o] = await db.insert(org).values({
     name: "Polico Comercial de Alimentos",
     homeCurrency: "USD",
-    homePort: "BR-SSZ",
+    homePort: "BR-NVT",
   }).returning();
 
   await db.insert(user).values({
@@ -44,6 +44,9 @@ export async function seedPolico() {
     ID: ["en", "id"],
     TR: ["en", "tr"],
     BR: ["en", "pt"],
+    EG: ["en", "ar"],
+    ES: ["en", "es"],
+    CN: ["en", "zh"],
   };
 
   for (let i = 0; i < vendors.length; i++) {
@@ -95,7 +98,9 @@ export async function seedPolico() {
 
   // Corridor freight per origin (USD/kg micros) — matches seedFxAndCorridors
   const FREIGHT_MICROS: Record<string, number> = {
-    IN: 180_000, VN: 220_000, ID: 210_000, TR: 160_000, BR: 40_000,
+    IN: 180_000, VN: 220_000, ID: 210_000, TR: 160_000,
+    CN: 190_000, EG: 150_000, ES: 130_000, PE: 200_000,
+    US: 140_000, PK: 180_000, BR: 40_000,
   };
 
   const incoterms = ["CIF", "FOB", "DAP"] as const;
@@ -119,22 +124,29 @@ export async function seedPolico() {
   type QuoteToInsert = typeof quote.$inferInsert & { _msgIndex: number };
   const quoteInserts: QuoteToInsert[] = [];
 
-  for (const v of vendors) {
-    const tId = threadByVendorId.get(v.id)!;
-    const skuCount = 3 + Math.floor(Math.random() * 6);
-    const skus = [...products].sort(() => Math.random() - 0.5).slice(0, skuCount);
+  // Map vendor name → seed entry for vendor-aware quote generation
+  const vendorSeedByName = new Map(POLICO_VENDORS.map((vs) => [vs.name, vs]));
 
-    for (const p of skus) {
-      const n = 1 + Math.floor(Math.random() * 4);
+  for (const v of vendors) {
+    const seed = vendorSeedByName.get(v.name);
+    if (!seed) continue;
+    const tId = threadByVendorId.get(v.id)!;
+    const skuCodes = seed.primarySkus;
+    const productsForVendor = products.filter((p) => skuCodes.includes(p.sku));
+
+    for (const p of productsForVendor) {
+      // Quote count proportional to shipmentVolume (1 → 2-3 quotes, 10 → 12-18 quotes over 6 months)
+      const n = Math.max(2, Math.round(seed.shipmentVolume * (0.8 + Math.random() * 0.6)));
       for (let i = 0; i < n; i++) {
         const daysAgo = Math.floor(Math.random() * 180);
         const sentAt = new Date(Date.now() - daysAgo * 24 * 3600 * 1000);
 
         const base = BASE_PRICES_USD_PER_KG[p.sku];
-        const variance = 0.85 + Math.random() * 0.30;     // ±15%
-        const isOutlier = Math.random() < 0.08;
-        const factor = isOutlier ? (Math.random() < 0.5 ? 1.18 : 0.82) : variance;
-        const usdPerKg = base * factor;
+        // Apply vendor pricing bias + random variance (±8%) + occasional outliers (5%)
+        const isOutlier = Math.random() < 0.05;
+        const variance = 0.92 + Math.random() * 0.16;
+        const outlierFactor = isOutlier ? (Math.random() < 0.5 ? 1.18 : 0.85) : 1.0;
+        const usdPerKg = base * (1 + (seed.pricingBias ?? 0)) * variance * outlierFactor;
 
         const unit = p.defaultUnit;
         const unitPriceUsd = unit === "MT" ? usdPerKg * 1000 : usdPerKg;
@@ -147,7 +159,7 @@ export async function seedPolico() {
           channel: "whatsapp_export",
           direction: "inbound",
           senderName: v.name,
-          body: `${p.name} available — $${unitPriceUsd.toFixed(2)}/${unit} ${incoterm} Santos. MOQ 1${unit === "MT" ? "MT" : "kg"}. Validity 7 days.`,
+          body: `${p.name} available — $${unitPriceUsd.toFixed(2)}/${unit} ${incoterm} Navegantes. MOQ 1${unit === "MT" ? "MT" : "kg"}. Validity 7 days.`,
           sentAt,
           classification: "quote",
         });
@@ -166,7 +178,7 @@ export async function seedPolico() {
             unit,
             incoterm,
             origin: v.country ?? "IN",
-            destinationPort: "BR-SSZ",
+            destinationPort: "BR-NVT",
             fxPerUsd,
             corridor,
           });
@@ -188,9 +200,9 @@ export async function seedPolico() {
           origin: v.country ?? "IN",
           packaging: null,
           incoterm,
-          destinationPort: "BR-SSZ",
-          leadTimeDays: 30 + Math.floor(Math.random() * 30),
-          paymentTerms: "30/70",
+          destinationPort: "BR-NVT",
+          leadTimeDays: 30 + Math.floor(Math.random() * 25),
+          paymentTerms: ["30/70", "100% advance", "LC at sight", "50/50"][Math.floor(Math.random() * 4)],
           validityUntil: new Date(sentAt.getTime() + 7 * 24 * 3600 * 1000),
           rawExtractedJson: {},
           confidencePerField: {},
@@ -246,14 +258,14 @@ export async function seedPolico() {
     {
       name: "Standard price inquiry — spices",
       category: "price_inquiry",
-      body: "Hi {vendor_name}, hope you're well. Could you share your best price for {product}, CIF Santos, validity 7 days, MOQ 1MT? Including current packaging options. Thanks!",
-      spec: { incoterm: "CIF", destinationPort: "BR-SSZ", validityDays: 7 },
+      body: "Hi {vendor_name}, hope you're well. Could you share your best price for {product}, CIF Navegantes, validity 7 days, MOQ 1MT? Including current packaging options. Thanks!",
+      spec: { incoterm: "CIF", destinationPort: "BR-NVT", validityDays: 7 },
     },
     {
       name: "Standard price inquiry — bulk pulses",
       category: "price_inquiry",
-      body: "Hi {vendor_name}, please share your best CIF Santos price for {product}, MOQ 20MT, validity 14 days. Mention packaging (50kg PP bags or 25kg) and earliest dispatch window. Thanks.",
-      spec: { incoterm: "CIF", destinationPort: "BR-SSZ", validityDays: 14, moq_mt: 20 },
+      body: "Hi {vendor_name}, please share your best CIF Navegantes price for {product}, MOQ 20MT, validity 14 days. Mention packaging (50kg PP bags or 25kg) and earliest dispatch window. Thanks.",
+      spec: { incoterm: "CIF", destinationPort: "BR-NVT", validityDays: 14, moq_mt: 20 },
     },
     {
       name: "Counter-offer — within 5%",
@@ -276,7 +288,7 @@ export async function seedPolico() {
     {
       name: "Document request — quality samples",
       category: "documents",
-      body: "Hi {vendor_name}, can you courier a 200g sample of {product} to our Santos office? We'll need it for a quality check before placing the order. Reference our chat from this week.",
+      body: "Hi {vendor_name}, can you courier a 200g sample of {product} to our Navegantes office? We'll need it for a quality check before placing the order. Reference our chat from this week.",
       spec: { documentTypes: ["Sample"] },
     },
   ];

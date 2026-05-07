@@ -78,7 +78,7 @@ export default function Alerts() {
         <div className="flex gap-2 flex-wrap">
           <input
             className="rounded-lg border border-forest-100/60 px-3 py-2 text-sm"
-            placeholder="SKU (e.g. CUMIN-99PURE)"
+            placeholder="SKU (e.g. CUMIN-SEEDS)"
             value={sku}
             onChange={(e) => setSku(e.target.value)}
           />

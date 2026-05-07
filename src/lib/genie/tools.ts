@@ -49,7 +49,7 @@ export function buildGenieTools(orgId: string) {
 
     compareQuotes: tool({
       description: "Compare quotes across vendors for a specific SKU.",
-      inputSchema: z.object({ sku: z.string().describe("SKU like BLACK-PEPPER-5MM") }),
+      inputSchema: z.object({ sku: z.string().describe("SKU like CUMIN-SEEDS") }),
       execute: async ({ sku }) => {
         const [p] = await db
           .select()

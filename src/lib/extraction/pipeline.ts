@@ -34,7 +34,7 @@ export async function processMessage(messageId: string): Promise<{ created: bool
       and(
         eq(corridorAssumption.orgId, m.orgId),
         eq(corridorAssumption.origin, ex.origin),
-        eq(corridorAssumption.destinationPort, ex.destination_port ?? "BR-SSZ"),
+        eq(corridorAssumption.destinationPort, ex.destination_port ?? "BR-NVT"),
       )
     );
     if (c) {
@@ -45,7 +45,7 @@ export async function processMessage(messageId: string): Promise<{ created: bool
           unit: ex.unit,
           incoterm: ex.incoterm as Incoterm,
           origin: ex.origin,
-          destinationPort: ex.destination_port ?? "BR-SSZ",
+          destinationPort: ex.destination_port ?? "BR-NVT",
           fxPerUsd,
           corridor: {
             freightUsdPerKgMicros: c.freightUsdPerKg,

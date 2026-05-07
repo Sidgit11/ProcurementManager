@@ -32,8 +32,8 @@ export async function seedExtras(orgId: string) {
     "Father met them at Sial 2025. Reliable on cumin volumes.",
     "Tend to drop price 3-4% when nudged on day 4 of negotiation.",
     "Slow on documents but rock-solid on delivery dates.",
-    "New contact since Jan 2026 — Lucia handles our orders now.",
-    "Originally referred by São Paulo Imports. Family-owned.",
+    "Premium positioning — usually 8-12% above market on apricots, but quality holds.",
+    "Originally referred by São Paulo Imports. Family-owned for 3 generations.",
   ];
   for (let i = 0; i < Math.min(5, vendors.length); i++) {
     await db.insert(vendorNote).values({
@@ -60,10 +60,10 @@ export async function seedExtras(orgId: string) {
 
   // Sample documents (4-6) with prebuilt vision metadata
   const sampleDocs = [
-    { kind: "CoA",            issuer: "SGS Mumbai",     valid_until: "2026-09-15", attrs: { moisture: "9.2%", purity: "99.1%" } },
-    { kind: "certification",  issuer: "USDA Organic",   valid_until: "2027-03-01", attrs: { scope: "spices" } },
-    { kind: "technical_sheet",issuer: "Patel Spices",   valid_until: null,         attrs: { product: "black pepper 5mm" } },
-    { kind: "price_list",     issuer: "Patel Spices",   valid_until: "2026-06-01", attrs: { items: 12 } },
+    { kind: "CoA",            issuer: "SGS Cairo",          valid_until: "2026-09-15", attrs: { moisture: "8.5%", purity: "98.7%" } },
+    { kind: "certification",  issuer: "USDA Organic",        valid_until: "2027-03-01", attrs: { scope: "dried vegetables" } },
+    { kind: "technical_sheet",issuer: "Flavour Foods Exp.",  valid_until: null,         attrs: { product: "cumin seeds whole" } },
+    { kind: "price_list",     issuer: "Entegre Gida Sanayi", valid_until: "2026-06-01", attrs: { items: 4 } },
   ];
   for (let i = 0; i < Math.min(sampleDocs.length, vendors.length); i++) {
     const d = sampleDocs[i];
@@ -78,9 +78,9 @@ export async function seedExtras(orgId: string) {
 
   // Sample alerts (3 popular SKUs)
   const sampleAlerts = [
-    { sku: "CUMIN-99PURE",      thresholdPerKgUsd: 3.50 },
-    { sku: "BLACK-PEPPER-5MM",  thresholdPerKgUsd: 4.80 },
-    { sku: "CARDAMOM-LARGE",    thresholdPerKgUsd: 27.00 },
+    { sku: "CUMIN-SEEDS",      thresholdPerKgUsd: 3.80 },
+    { sku: "TURMERIC-WHOLE",   thresholdPerKgUsd: 1.85 },
+    { sku: "APRICOTS-DRIED",   thresholdPerKgUsd: 4.00 },
   ];
   for (const a of sampleAlerts) {
     await db.insert(alert).values({
@@ -93,11 +93,11 @@ export async function seedExtras(orgId: string) {
   // Sample chat session (1, with 2-3 turns)
   if (userId) {
     const [session] = await db.insert(chatSession).values({
-      orgId, userId, title: "Cardamom market check",
+      orgId, userId, title: "Cumin seeds market check",
     }).returning();
     await db.insert(chatMessage).values([
-      { sessionId: session.id, role: "user",      content: "Which vendors quoted me below market for cardamom this month?" },
-      { sessionId: session.id, role: "assistant", content: "Two vendors are below the trailing 30-day median for cardamom large: Cochin Pepper Estate at $26.10/kg and Hyderabad Direct at $26.85/kg. Want to send an RFQ to both?" },
+      { sessionId: session.id, role: "user",      content: "Which vendors quoted me below market for cumin seeds this month?" },
+      { sessionId: session.id, role: "assistant", content: "Two vendors are below the trailing 30-day median for cumin seeds: Flavour Foods Exp. at $3.88/kg and Kirti Foods Pvt., Ltd. at $3.94/kg. Want to send an RFQ to both?" },
     ]);
   }
 

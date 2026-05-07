@@ -9,7 +9,7 @@ export async function provisionOrgIfMissing(clerkOrgId: string, name: string) {
     clerkOrgId,
     name,
     homeCurrency: "USD",
-    homePort: "BR-SSZ",
+    homePort: "BR-NVT",
   }).returning();
   return created;
 }

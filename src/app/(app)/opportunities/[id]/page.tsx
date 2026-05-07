@@ -91,7 +91,7 @@ export default async function OpportunityDetail({ params }: { params: Promise<{ 
         existingPoId={existingPo?.id ?? null}
         existingNegotiationDraft={existingNegotiation?.agentDraftedResponse ?? null}
         orgDefaults={{
-          homePort: orgRow?.homePort ?? "BR-SSZ",
+          homePort: orgRow?.homePort ?? "BR-NVT",
           homeCurrency: orgRow?.homeCurrency ?? "USD",
           orgName: orgRow?.name ?? "—",
         }}

@@ -1,7 +1,7 @@
 import type { PgliteDatabase } from "drizzle-orm/pglite";
 import * as schema from "../db/schema";
 import { POLICO_CATALOG, BASE_PRICES_USD_PER_KG } from "./catalog";
-import { buildVendors } from "./vendors";
+import { buildVendors, POLICO_VENDORS } from "./vendors";
 import { computeLandedCostUsdPerKgMicros } from "../normalization/landed-cost";
 import type { Incoterm } from "../normalization/incoterm";
 import { DEFAULT_POLICIES } from "../agents/policy";
@@ -57,13 +57,19 @@ export async function seedDemo(db: DB) {
     { origin: "VN", freightUsdPerKg: 0.22 },
     { origin: "ID", freightUsdPerKg: 0.21 },
     { origin: "TR", freightUsdPerKg: 0.16 },
+    { origin: "CN", freightUsdPerKg: 0.19 },
+    { origin: "EG", freightUsdPerKg: 0.15 },
+    { origin: "ES", freightUsdPerKg: 0.13 },
+    { origin: "PE", freightUsdPerKg: 0.20 },
+    { origin: "US", freightUsdPerKg: 0.14 },
+    { origin: "PK", freightUsdPerKg: 0.18 },
     { origin: "BR", freightUsdPerKg: 0.04 },
   ];
   for (const c of corridors) {
     await db.insert(schema.corridorAssumption).values({
       orgId: DEMO_ORG.id,
       origin: c.origin,
-      destinationPort: "BR-SSZ",
+      destinationPort: "BR-NVT",   // Navegantes — Polico's actual primary port
       freightUsdPerKg: Math.round(c.freightUsdPerKg * 1_000_000),
       insuranceBps: 50,
       dutyBps: 800,
@@ -89,6 +95,9 @@ export async function seedDemo(db: DB) {
     ID: ["en", "id"],
     TR: ["en", "tr"],
     BR: ["en", "pt"],
+    EG: ["en", "ar"],
+    ES: ["en", "es"],
+    CN: ["en", "zh"],
   };
 
   for (let i = 0; i < vendors.length; i++) {
@@ -138,7 +147,9 @@ export async function seedDemo(db: DB) {
     ["VND", 25_000], ["IDR", 15_700], ["TRY", 32.40],
   ]);
   const FREIGHT_MICROS: Record<string, number> = {
-    IN: 180_000, VN: 220_000, ID: 210_000, TR: 160_000, BR: 40_000,
+    IN: 180_000, VN: 220_000, ID: 210_000, TR: 160_000,
+    CN: 190_000, EG: 150_000, ES: 130_000, PE: 200_000,
+    US: 140_000, PK: 180_000, BR: 40_000,
   };
   const incoterms = ["CIF", "FOB", "DAP"] as const;
 
@@ -153,9 +164,6 @@ export async function seedDemo(db: DB) {
   const insertedThreads = await db.insert(schema.thread).values(threadInserts).returning();
   const threadByVendor = new Map(insertedThreads.map((t) => [t.vendorId, t.id]));
 
-  // Use 50 vendors for demo (faster init)
-  const VENDOR_SUBSET = vendors.slice(0, 50);
-
   const messageInserts: Array<typeof schema.message.$inferInsert> = [];
   type QuoteToInsert = typeof schema.quote.$inferInsert & { _msgIndex: number };
   const quoteInserts: QuoteToInsert[] = [];
@@ -164,22 +172,29 @@ export async function seedDemo(db: DB) {
   let seed = 12345;
   const rand = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
 
-  for (const v of VENDOR_SUBSET) {
-    const tId = threadByVendor.get(v.id)!;
-    const skuCount = 3 + Math.floor(rand() * 3);
-    const skus = [...products].sort(() => rand() - 0.5).slice(0, skuCount);
+  // Map vendor name → seed entry for vendor-aware quote generation
+  const vendorSeedByName = new Map(POLICO_VENDORS.map((vs) => [vs.name, vs]));
 
-    for (const p of skus) {
-      const n = 1 + Math.floor(rand() * 3);
+  for (const v of vendors) {
+    const vendorSeedEntry = vendorSeedByName.get(v.name);
+    if (!vendorSeedEntry) continue;
+    const tId = threadByVendor.get(v.id)!;
+    const skuCodes = vendorSeedEntry.primarySkus;
+    const productsForVendor = products.filter((p) => skuCodes.includes(p.sku));
+
+    for (const p of productsForVendor) {
+      // Quote count proportional to shipmentVolume (1 → 2-3 quotes, 10 → 12-18 quotes over 6 months)
+      const n = Math.max(2, Math.round(vendorSeedEntry.shipmentVolume * (0.8 + rand() * 0.6)));
       for (let i = 0; i < n; i++) {
         const daysAgo = Math.floor(rand() * 180);
         const sentAt = new Date(Date.now() - daysAgo * 24 * 3600 * 1000);
 
         const base = BASE_PRICES_USD_PER_KG[p.sku];
-        const variance = 0.85 + rand() * 0.30;
-        const isOutlier = rand() < 0.08;
-        const factor = isOutlier ? (rand() < 0.5 ? 1.18 : 0.82) : variance;
-        const usdPerKg = base * factor;
+        // Apply vendor pricing bias + random variance (±8%) + occasional outliers (5%)
+        const isOutlier = rand() < 0.05;
+        const variance = 0.92 + rand() * 0.16;
+        const outlierFactor = isOutlier ? (rand() < 0.5 ? 1.18 : 0.85) : 1.0;
+        const usdPerKg = base * (1 + (vendorSeedEntry.pricingBias ?? 0)) * variance * outlierFactor;
 
         const unit = p.defaultUnit;
         const unitPriceUsd = unit === "MT" ? usdPerKg * 1000 : usdPerKg;
@@ -192,7 +207,7 @@ export async function seedDemo(db: DB) {
           channel: "whatsapp_export",
           direction: "inbound",
           senderName: v.name,
-          body: `${p.name} available — $${unitPriceUsd.toFixed(2)}/${unit} ${incoterm} Santos. MOQ 1${unit === "MT" ? "MT" : "kg"}. Validity 7 days.`,
+          body: `${p.name} available — $${unitPriceUsd.toFixed(2)}/${unit} ${incoterm} Navegantes. MOQ 1${unit === "MT" ? "MT" : "kg"}. Validity 7 days.`,
           sentAt,
           classification: "quote",
         });
@@ -210,7 +225,7 @@ export async function seedDemo(db: DB) {
             unit,
             incoterm,
             origin: v.country ?? "IN",
-            destinationPort: "BR-SSZ",
+            destinationPort: "BR-NVT",
             fxPerUsd,
             corridor,
           });
@@ -230,9 +245,9 @@ export async function seedDemo(db: DB) {
           origin: v.country ?? "IN",
           packaging: null,
           incoterm,
-          destinationPort: "BR-SSZ",
-          leadTimeDays: 30 + Math.floor(rand() * 30),
-          paymentTerms: "30/70",
+          destinationPort: "BR-NVT",
+          leadTimeDays: 30 + Math.floor(rand() * 25),
+          paymentTerms: ["30/70", "100% advance", "LC at sight", "50/50"][Math.floor(rand() * 4)],
           validityUntil: new Date(sentAt.getTime() + 7 * 24 * 3600 * 1000),
           rawExtractedJson: {},
           confidencePerField: {},
@@ -291,14 +306,14 @@ export async function seedDemo(db: DB) {
     {
       name: "Standard price inquiry — spices",
       category: "price_inquiry",
-      body: "Hi {vendor_name}, hope you're well. Could you share your best price for {product}, CIF Santos, validity 7 days, MOQ 1MT? Including current packaging options. Thanks!",
-      spec: { incoterm: "CIF", destinationPort: "BR-SSZ", validityDays: 7 },
+      body: "Hi {vendor_name}, hope you're well. Could you share your best price for {product}, CIF Navegantes, validity 7 days, MOQ 1MT? Including current packaging options. Thanks!",
+      spec: { incoterm: "CIF", destinationPort: "BR-NVT", validityDays: 7 },
     },
     {
       name: "Standard price inquiry — bulk pulses",
       category: "price_inquiry",
-      body: "Hi {vendor_name}, please share your best CIF Santos price for {product}, MOQ 20MT, validity 14 days. Mention packaging (50kg PP bags or 25kg) and earliest dispatch window. Thanks.",
-      spec: { incoterm: "CIF", destinationPort: "BR-SSZ", validityDays: 14, moq_mt: 20 },
+      body: "Hi {vendor_name}, please share your best CIF Navegantes price for {product}, MOQ 20MT, validity 14 days. Mention packaging (50kg PP bags or 25kg) and earliest dispatch window. Thanks.",
+      spec: { incoterm: "CIF", destinationPort: "BR-NVT", validityDays: 14, moq_mt: 20 },
     },
     {
       name: "Counter-offer — within 5%",
@@ -321,7 +336,7 @@ export async function seedDemo(db: DB) {
     {
       name: "Document request — quality samples",
       category: "documents",
-      body: "Hi {vendor_name}, can you courier a 200g sample of {product} to our Santos office? We'll need it for a quality check before placing the order. Reference our chat from this week.",
+      body: "Hi {vendor_name}, can you courier a 200g sample of {product} to our Navegantes office? We'll need it for a quality check before placing the order. Reference our chat from this week.",
       spec: { documentTypes: ["Sample"] },
     },
   ];
@@ -338,9 +353,9 @@ export async function seedDemo(db: DB) {
 
   // Sample alerts
   const sampleAlerts = [
-    { sku: "CUMIN-99PURE",     thresholdPerKgUsd: 3.50 },
-    { sku: "BLACK-PEPPER-5MM", thresholdPerKgUsd: 4.80 },
-    { sku: "CARDAMOM-LARGE",   thresholdPerKgUsd: 27.00 },
+    { sku: "CUMIN-SEEDS",      thresholdPerKgUsd: 3.80 },
+    { sku: "TURMERIC-WHOLE",   thresholdPerKgUsd: 1.85 },
+    { sku: "APRICOTS-DRIED",   thresholdPerKgUsd: 4.00 },
   ];
   for (const a of sampleAlerts) {
     await db.insert(schema.alert).values({
@@ -356,7 +371,7 @@ export async function seedDemo(db: DB) {
   const allQuotes = await db.select().from(schema.quote).where(eq(schema.quote.orgId, DEMO_ORG.id));
 
   // Vendor score tiers
-  for (const v of VENDOR_SUBSET) {
+  for (const v of vendors) {
     const tier = ["RELIABLE", "RELIABLE", "AGGRESSIVE", "SLOW", "OUTLIER"][Math.floor(rand() * 5)];
     await db.update(schema.vendor).set({ scoreTier: tier }).where(eq(schema.vendor.id, v.id));
   }
@@ -404,7 +419,7 @@ export async function seedDemo(db: DB) {
 
   // Sample notifications
   await db.insert(schema.notification).values([
-    { orgId: DEMO_ORG.id, kind: "alert_triggered", payload: { sku: "CUMIN-99PURE", message: "Cumin dropped below threshold" } },
+    { orgId: DEMO_ORG.id, kind: "alert_triggered", payload: { sku: "CUMIN-SEEDS", message: "Cumin seeds dropped below threshold" } },
     { orgId: DEMO_ORG.id, kind: "agent_proposal", payload: { agent: "follow_up", count: 3 } },
   ]);
 

@@ -6,6 +6,7 @@ import { toast } from "sonner";
 
 const CURRENCIES = ["USD", "EUR", "BRL", "INR", "VND", "IDR", "TRY"];
 const PORTS = [
+  { code: "BR-NVT", name: "Navegantes, Brazil" },
   { code: "BR-SSZ", name: "Santos, Brazil" },
   { code: "BR-PNG", name: "Paranaguá, Brazil" },
   { code: "IN-NSA", name: "Nhava Sheva, India" },

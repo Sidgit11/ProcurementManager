@@ -6,7 +6,7 @@ export const DEMO_ORG = {
   clerkOrgId: "demo-org",
   name: "Polico Comercial de Alimentos",
   homeCurrency: "USD" as const,
-  homePort: "BR-SSZ" as const,
+  homePort: "BR-NVT" as const,
   settings: {} as Record<string, unknown>,
   createdAt: new Date(),
 };
