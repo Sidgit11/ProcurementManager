@@ -125,8 +125,6 @@ export async function seedPolico() {
     US: 140_000, PK: 180_000, BR: 40_000,
   };
 
-  const incoterms = ["CIF", "FOB", "DAP"] as const;
-
   // Generate threads — placeholder date; will be backfilled after messages are inserted
   const threadInserts: typeof thread.$inferInsert[] = [];
   for (const v of vendors) {
@@ -172,7 +170,7 @@ export async function seedPolico() {
 
         const unit = p.defaultUnit;
         const unitPriceUsd = unit === "MT" ? usdPerKg * 1000 : usdPerKg;
-        const incoterm: Incoterm = incoterms[Math.floor(Math.random() * incoterms.length)];
+        const incoterm: Incoterm = "FOB";
 
         const msgIdx = messageInserts.length;
         messageInserts.push({

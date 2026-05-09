@@ -68,14 +68,14 @@ const TUAN_MINH = "Tuan Minh Trading And Production Co., Ltd.";
 const tuanMinhMessages: ScriptedMsg[] = [
   // Week 1 — initial outreach
   { day: 0,   hour: 9,  minute: 12, sender: TUAN_MINH, body: "Good morning Mr Lucas, this is Hanh from Tuan Minh Trading in Lao Cai. We met your father at Sial Brazil last March. We export cassia cinnamon — Quang Nam origin — and would love to be considered for your next program." },
-  { day: 0,   hour: 9,  minute: 13, sender: TUAN_MINH, body: "Today's offer: Cassia Cinnamon Sticks 8% oil, $2.40/kg CIF Navegantes, MOQ 1MT, validity 7 days. Packing in 25kg PP woven bags. Payment 30/70." },
+  { day: 0,   hour: 9,  minute: 13, sender: TUAN_MINH, body: "Today's offer: Cassia Cinnamon Sticks 8% oil, $2.40/kg FOB Haiphong, MOQ 1MT, validity 7 days. Packing in 25kg PP woven bags. Payment 30/70." },
   { day: 0,   hour: 14, minute: 22, sender: "you",     body: "Hi Hanh, thanks for reaching out. Yes my father remembers you well. Can you share a CoA and phytosanitary template? Also do you have BPC and BC1 grades?" },
   { day: 0,   hour: 14, minute: 41, sender: TUAN_MINH, body: "Of course. Sending CoA from last shipment + BC1 sample list. We can do BC1 and BC2 from same harvest." },
   { day: 0,   hour: 14, minute: 42, sender: TUAN_MINH, attachment: { filename: "CoA-cassia-Q2-2025.pdf",         bytes: PDF_HEADER } },
   { day: 0,   hour: 14, minute: 43, sender: TUAN_MINH, attachment: { filename: "Phyto-template-Vietnam.pdf",     bytes: PDF_HEADER } },
 
   // Week 3 — first repeat quote, slight market shift
-  { day: 14,  hour: 10, minute: 5,  sender: TUAN_MINH, body: "Bom dia Mr Lucas. Quick update on cassia — Vietnam harvest finishing, prices firming. Today: $2.46/kg CIF Navegantes, same MOQ and packing. Validity 5 days." },
+  { day: 14,  hour: 10, minute: 5,  sender: TUAN_MINH, body: "Bom dia Mr Lucas. Quick update on cassia — Vietnam harvest finishing, prices firming. Today: $2.46/kg FOB Haiphong, same MOQ and packing. Validity 5 days." },
   { day: 14,  hour: 11, minute: 30, sender: "you",     body: "Got it. We're comparing — give me a day." },
 
   // Week 5 — voice note + photos
@@ -97,7 +97,7 @@ const tuanMinhMessages: ScriptedMsg[] = [
   { day: 70,  hour: 10, minute: 27, sender: "you",     body: "Appreciated. Apply on next PO." },
 
   // Week 13 — second cycle quote
-  { day: 91,  hour: 9,  minute: 30, sender: TUAN_MINH, body: "Good morning Mr Lucas. New crop in. Cassia BC1 at $2.28/kg CIF Navegantes, MOQ 5MT, validity 7 days. Quality is excellent — please remember the 60kg credit." },
+  { day: 91,  hour: 9,  minute: 30, sender: TUAN_MINH, body: "Good morning Mr Lucas. New crop in. Cassia BC1 at $2.28/kg FOB Haiphong, MOQ 5MT, validity 7 days. Quality is excellent — please remember the 60kg credit." },
   { day: 91,  hour: 13, minute: 5,  sender: "you",     body: "Noted credit. Lock 5MT at $2.28. Send PO." },
   { day: 91,  hour: 13, minute: 22, sender: TUAN_MINH, attachment: { filename: "PO-confirmation-TM-2025-1198.pdf", bytes: PDF_HEADER } },
 
@@ -111,13 +111,13 @@ const tuanMinhMessages: ScriptedMsg[] = [
   { day: 133, hour: 8,  minute: 11, sender: TUAN_MINH, attachment: { filename: "BL-CMUS-882013.pdf",              bytes: PDF_HEADER } },
 
   // Week 22 — third cycle quote, market firming
-  { day: 154, hour: 10, minute: 30, sender: TUAN_MINH, body: "Mr Lucas, Cassia BC1 today: $2.42/kg CIF Navegantes, validity 5 days. Demand from EU is heavy. If you can confirm 5MT today I can hold $2.42 for 7 days." },
+  { day: 154, hour: 10, minute: 30, sender: TUAN_MINH, body: "Mr Lucas, Cassia BC1 today: $2.42/kg FOB Haiphong, validity 5 days. Demand from EU is heavy. If you can confirm 5MT today I can hold $2.42 for 7 days." },
   { day: 154, hour: 16, minute: 22, sender: "you",     body: "$2.42 is firm side. Anything between 2.36-2.38 doable on 5MT?" },
   { day: 154, hour: 17, minute: 3,  sender: TUAN_MINH, body: "Best I can do is $2.39, locked for 5 days. After that I cannot guarantee." },
   { day: 154, hour: 17, minute: 30, sender: "you",     body: "Done. PO incoming." },
 
   // Week 25 — close to today
-  { day: 172, hour: 9,  minute: 5,  sender: TUAN_MINH, body: "Mr Lucas, just a heads up — our forecast for next 30 days is firming further on cassia. If you want to lock Q3 program at $2.39 we can hold." },
+  { day: 172, hour: 9,  minute: 5,  sender: TUAN_MINH, body: "Mr Lucas, just a heads up — our forecast for next 30 days is firming further on cassia. If you want to lock Q3 program at $2.39 FOB Haiphong we can hold." },
   { day: 172, hour: 11, minute: 22, sender: "you",     body: "Send proposal in writing — quantity, price, payment, delivery windows." },
   { day: 172, hour: 11, minute: 50, sender: TUAN_MINH, attachment: { filename: "Q3-program-proposal-Polico.pdf",  bytes: PDF_HEADER } },
 ];
@@ -126,27 +126,27 @@ const tuanMinhMessages: ScriptedMsg[] = [
 const ENTEGRE = "Entegre Gida Sanayi Jsc";
 
 const entegreMessages: ScriptedMsg[] = [
-  { day: 0,   hour: 9,  minute: 30, sender: ENTEGRE, body: "Hi Mr Lucas, this is Cem from Entegre Gida Malatya. We are top exporter of organic dried apricots to Brazil. Our latest offer for #1 grade Standard 5: $4.65/kg CIF Navegantes, MOQ 5MT, validity 7 days. Packing 12.5kg cartons." },
+  { day: 0,   hour: 9,  minute: 30, sender: ENTEGRE, body: "Hi Mr Lucas, this is Cem from Entegre Gida Malatya. We are top exporter of organic dried apricots to Brazil. Our latest offer for #1 grade Standard 5: $4.65/kg FOB Mersin, MOQ 5MT, validity 7 days. Packing 12.5kg cartons." },
   { day: 0,   hour: 14, minute: 5,  sender: "you",   body: "Hi Cem, thanks. Price is on the higher side. What grade exactly and what is sulfur content?" },
   { day: 0,   hour: 14, minute: 18, sender: ENTEGRE, body: "Standard 5, 22-30 fruits per 100g, sulfured 2000ppm. Premium category, top of harvest. We do not compete on commodity grade." },
   { day: 0,   hour: 14, minute: 19, sender: ENTEGRE, attachment: { filename: "Apricot-Specsheet-2025.pdf", bytes: PDF_HEADER } },
-  { day: 7,   hour: 10, minute: 22, sender: ENTEGRE, body: "Mr Lucas, we have a small allocation opportunity at $4.55 if you can confirm 10MT this week." },
+  { day: 7,   hour: 10, minute: 22, sender: ENTEGRE, body: "Mr Lucas, we have a small allocation opportunity at $4.55 FOB Mersin if you can confirm 10MT this week." },
   { day: 7,   hour: 11, minute: 30, sender: "you",   body: "10MT is too much for one shot. 5MT at $4.40?" },
-  { day: 7,   hour: 12, minute: 5,  sender: ENTEGRE, body: "$4.40 is below our floor for #1 grade. $4.50 for 5MT, validity 5 days." },
+  { day: 7,   hour: 12, minute: 5,  sender: ENTEGRE, body: "$4.40 is below our floor for #1 grade. $4.50 FOB Mersin for 5MT, validity 5 days." },
   { day: 7,   hour: 14, minute: 22, sender: "you",   body: "Let me think. Will revert tomorrow." },
   { day: 30,  hour: 9,  minute: 12, sender: ENTEGRE, body: "Bom dia Mr Lucas. New crop estimates out — we are seeing 15% lower yield this year. Recommend booking sooner rather than later." },
   { day: 30,  hour: 9,  minute: 13, sender: ENTEGRE, attachment: { filename: "Turkey-Apricot-Crop-Forecast-2025.pdf", bytes: PDF_HEADER } },
   { day: 30,  hour: 14, minute: 30, sender: "you",   body: "Noted. Comparing with 2 other Malatya vendors. Will close by Friday." },
   { day: 60,  hour: 11, minute: 0,  sender: ENTEGRE, body: "Mr Lucas, your 5MT is ready for shipment. ETA Itajaí 23 days from now." },
   { day: 60,  hour: 11, minute: 5,  sender: ENTEGRE, attachment: { filename: "BL-MEDU-9928.pdf",                    bytes: PDF_HEADER } },
-  { day: 90,  hour: 10, minute: 30, sender: ENTEGRE, body: "Mr Lucas, hope shipment arrived in good condition. Next allocation: $4.62/kg CIF Navegantes, validity 7 days. We can do 50/50 payment if helpful." },
+  { day: 90,  hour: 10, minute: 30, sender: ENTEGRE, body: "Mr Lucas, hope shipment arrived in good condition. Next allocation: $4.62/kg FOB Mersin, validity 7 days. We can do 50/50 payment if helpful." },
   { day: 90,  hour: 14, minute: 22, sender: "you",   body: "Yes shipment arrived clean, thank you. Will consider next allocation, give me a few days." },
   { day: 120, hour: 9,  minute: 12, sender: ENTEGRE, body: "Reminder Mr Lucas — that price hold expires today end of day. Confirm if you want it extended." },
   { day: 120, hour: 14, minute: 5,  sender: "you",   body: "Pass for now, we have enough stock." },
-  { day: 150, hour: 11, minute: 0,  sender: ENTEGRE, body: "Hi Mr Lucas. Crop is in. Premium #1 Standard 5: $4.78/kg CIF Navegantes, packing 12.5kg cartons, validity 5 days. Quality this year is exceptional." },
+  { day: 150, hour: 11, minute: 0,  sender: ENTEGRE, body: "Hi Mr Lucas. Crop is in. Premium #1 Standard 5: $4.78/kg FOB Mersin, packing 12.5kg cartons, validity 5 days. Quality this year is exceptional." },
   { day: 150, hour: 14, minute: 30, sender: "you",   body: "$4.78 is too aggressive. Market median we see is $4.20." },
   { day: 150, hour: 14, minute: 50, sender: ENTEGRE, body: "Median includes Standard 6/7 grades. We are #1 exclusively. If price-sensitive, Kirlioglu has Standard 6 at lower." },
-  { day: 175, hour: 10, minute: 0,  sender: ENTEGRE, body: "Mr Lucas, holding $4.72 for 7 days for 5MT. After that no commitments." },
+  { day: 175, hour: 10, minute: 0,  sender: ENTEGRE, body: "Mr Lucas, holding $4.72 FOB Mersin for 7 days for 5MT. After that no commitments." },
   { day: 175, hour: 10, minute: 30, sender: "you",   body: "Thanks Cem, will revert." },
 ];
 

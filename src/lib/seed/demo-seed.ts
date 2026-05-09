@@ -173,8 +173,6 @@ export async function seedDemo(db: DB) {
     CN: 190_000, EG: 150_000, ES: 130_000, PE: 200_000,
     US: 140_000, PK: 180_000, BR: 40_000,
   };
-  const incoterms = ["CIF", "FOB", "DAP"] as const;
-
   // Threads (one per vendor) — placeholder date; will be backfilled after messages are inserted
   const threadInserts = vendors.map((v) => ({
     orgId: DEMO_ORG.id,
@@ -220,7 +218,7 @@ export async function seedDemo(db: DB) {
 
         const unit = p.defaultUnit;
         const unitPriceUsd = unit === "MT" ? usdPerKg * 1000 : usdPerKg;
-        const incoterm: Incoterm = incoterms[Math.floor(rand() * incoterms.length)];
+        const incoterm: Incoterm = "FOB";
 
         const msgIdx = messageInserts.length;
         messageInserts.push({
